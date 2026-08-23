@@ -16,128 +16,85 @@
 <style>
 
 body {
-
     font-family: Arial, sans-serif;
-
     padding: 20px;
-
     max-width: 600px;
-
     margin: auto;
 }
 
-
 h2 {
-
     margin-bottom: 20px;
 }
 
-
-.security-status {
-
+.status {
     padding: 12px;
-
     border-radius: 5px;
-
     margin-bottom: 20px;
-
     background-color: #e8f5e9;
-
     color: #198754;
-
     font-weight: bold;
 }
 
+.error {
+    background-color: #f8d7da;
+    color: #842029;
+}
 
 label {
-
     display: block;
-
     margin-top: 15px;
-
     font-weight: bold;
 }
 
-
 select {
-
     width: 100%;
-
     box-sizing: border-box;
-
     padding: 10px;
-
     margin-top: 5px;
-
     font-size: 16px;
 }
 
-
 button {
-
     width: 100%;
-
     padding: 12px;
-
     margin-top: 25px;
-
     font-size: 16px;
-
     cursor: pointer;
-
     border: none;
-
     border-radius: 5px;
 }
 
-
 .btn-green {
-
     background-color: #28a745;
-
     color: white;
 }
 
-
-.btn-red {
-
-    background-color: #dc3545;
-
+.btn-gray {
+    background-color: #6c757d;
     color: white;
 }
-
 
 .info {
-
     font-size: 14px;
-
     color: #555;
-
     margin-top: 15px;
-
     line-height: 1.5;
 }
 
-
 .preview {
-
     background-color: #f5f5f5;
-
     border: 1px solid #ccc;
-
     padding: 12px;
-
     margin-top: 20px;
-
     border-radius: 5px;
-
     white-space: pre-wrap;
-
     max-height: 300px;
-
     overflow-y: auto;
-
     font-size: 14px;
+}
+
+.hidden {
+    display: none;
 }
 
 </style>
@@ -153,14 +110,11 @@ button {
 </h2>
 
 
-<div class="security-status">
-
-    ✓ Daten wurden verschlüsselt.
-
-    <br>
-
-    Sicherheitscode muss nicht erneut eingegeben werden.
-
+<div
+    id="status"
+    class="status"
+>
+    Formular wurde erfolgreich übernommen.
 </div>
 
 
@@ -198,10 +152,11 @@ button {
 
 <div class="info">
 
-    <strong>Hinweis:</strong>
+<strong>Hinweis:</strong><br>
 
-    Marco Wüest wird automatisch als Empfänger
-    hinzugefügt.
+Marco Wüest wird automatisch als Empfänger
+hinzugefügt. Die anderen Empfänger können
+frei ausgewählt werden.
 
 </div>
 
@@ -233,7 +188,7 @@ button {
 
 <button
     type="button"
-    class="btn-red"
+    class="btn-gray"
     onclick="abbrechen()"
 >
     Abbrechen
@@ -398,7 +353,7 @@ const empfaengerListe = [
 
 
 /* =========================================================
-   DROPDOWN FÜLLEN
+   DROPDOWNS FÜLLEN
    ========================================================= */
 
 function fuelleDropdown(id) {
@@ -442,237 +397,61 @@ function fuelleDropdown(id) {
             select.appendChild(
                 option
             );
-
         }
     );
 }
 
 
 /* =========================================================
-   BASE64 -> ARRAYBUFFER
+   DATEN LADEN
    ========================================================= */
 
-function base64ZuArrayBuffer(base64) {
-
-    const binary =
-        atob(base64);
-
-
-    const bytes =
-        new Uint8Array(
-            binary.length
-        );
-
-
-    for (
-        let i = 0;
-        i < binary.length;
-        i++
-    ) {
-
-        bytes[i] =
-            binary.charCodeAt(i);
-    }
-
-
-    return bytes.buffer;
-}
-
-
-/* =========================================================
-   SCHLÜSSEL ERSTELLEN
-   ========================================================= */
-
-async function erstelleSchluessel(passwort) {
-
-    const encoder =
-        new TextEncoder();
-
-
-    const passwortBytes =
-        encoder.encode(
-            passwort
-        );
-
-
-    const baseKey =
-        await crypto.subtle.importKey(
-            "raw",
-            passwortBytes,
-            "PBKDF2",
-            false,
-            ["deriveKey"]
-        );
-
-
-    const salt =
-        encoder.encode(
-            "Kontrollformular-V10-Salt-2026"
-        );
-
-
-    return await crypto.subtle.deriveKey(
-
-        {
-            name: "PBKDF2",
-
-            salt: salt,
-
-            iterations: 150000,
-
-            hash: "SHA-256"
-        },
-
-        baseKey,
-
-        {
-            name: "AES-GCM",
-
-            length: 256
-        },
-
-        false,
-
-        [
-            "encrypt",
-            "decrypt"
-        ]
-    );
-}
-
-
-/* =========================================================
-   DATEN ENTSCHLÜSSELN
-   ========================================================= */
-
-async function entschluesseln(
-    verschluesselt,
-    schluessel
-) {
-
-    const iv =
-        new Uint8Array(
-            base64ZuArrayBuffer(
-                verschluesselt.iv
-            )
-        );
-
+function ladeDaten() {
 
     const daten =
-        base64ZuArrayBuffer(
-            verschluesselt.data
-        );
-
-
-    const entschluesselt =
-        await crypto.subtle.decrypt(
-
-            {
-                name: "AES-GCM",
-
-                iv: iv
-            },
-
-            schluessel,
-
-            daten
-        );
-
-
-    const decoder =
-        new TextDecoder();
-
-
-    return decoder.decode(
-        entschluesselt
-    );
-}
-
-
-/* =========================================================
-   DATEN LADEN UND ENTSCHLÜSSELN
-   ========================================================= */
-
-async function ladeDaten() {
-
-    const verschluesselteDaten =
         sessionStorage.getItem(
-            "v10_encrypted_data"
+            "v10_formular_daten"
         );
 
 
-    const code =
-        sessionStorage.getItem(
-            "v10_session_code"
-        );
-
-
-    if (
-        !verschluesselteDaten ||
-        !code
-    ) {
-
+    const preview =
         document.getElementById(
             "preview"
-        ).textContent =
-            "Keine verschlüsselten Daten gefunden.";
+        );
+
+
+    if (!daten) {
+
+        preview.textContent =
+            "Es wurden keine Formulardaten gefunden.";
+
+        document
+            .getElementById("status")
+            .classList.add("error");
+
+        document
+            .getElementById("status")
+            .textContent =
+            "Keine Formulardaten vorhanden.";
 
         return;
     }
 
 
-    try {
+    /*
+       Daten nur zur Kontrolle anzeigen.
+    */
 
-        const daten =
-            JSON.parse(
-                verschluesselteDaten
-            );
-
-
-        const schluessel =
-            await erstelleSchluessel(
-                code
-            );
+    preview.textContent =
+        daten;
 
 
-        const text =
-            await entschluesseln(
-                daten,
-                schluessel
-            );
+    /*
+       Für send() im Speicher verfügbar machen.
+    */
 
-
-        /*
-           Nur zur Kontrolle im Browser.
-           Die Daten bleiben im Arbeitsspeicher.
-        */
-
-        document.getElementById(
-            "preview"
-        ).textContent =
-            text;
-
-
-        /*
-           Entschlüsselten Text für senden()
-           temporär im Speicher halten.
-        */
-
-        window.v10EmailText =
-            text;
-
-
-    } catch (error) {
-
-        console.error(error);
-
-        document.getElementById(
-            "preview"
-        ).textContent =
-            "Fehler beim Entschlüsseln der Daten.";
-
-    }
-
+    window.v10EmailText =
+        daten;
 }
 
 
@@ -689,70 +468,44 @@ function senden() {
     if (!text) {
 
         alert(
-            "Die Formulardaten konnten nicht geladen werden."
+            "Keine Formulardaten vorhanden."
         );
 
         return;
     }
 
 
-    /* -----------------------------------------------------
-       Empfänger auslesen
-       ----------------------------------------------------- */
-
     const e1 =
-        document
-            .getElementById(
-                "empfaenger1"
-            )
-            .value;
-
+        document.getElementById(
+            "empfaenger1"
+        ).value;
 
     const e2 =
-        document
-            .getElementById(
-                "empfaenger2"
-            )
-            .value;
-
+        document.getElementById(
+            "empfaenger2"
+        ).value;
 
     const e3 =
-        document
-            .getElementById(
-                "empfaenger3"
-            )
-            .value;
-
+        document.getElementById(
+            "empfaenger3"
+        ).value;
 
     const e4 =
-        document
-            .getElementById(
-                "empfaenger4"
-            )
-            .value;
-
-
-    /* -----------------------------------------------------
-       Empfänger erstellen
-       ----------------------------------------------------- */
-
-    let emails = [];
+        document.getElementById(
+            "empfaenger4"
+        ).value;
 
 
     /*
-       Marco immer hinzufügen
+       Marco immer hinzufügen.
     */
 
-    const marco =
-        "marco.wueest@lu.ch";
+    let emails = [
+        "marco.wueest@lu.ch"
+    ];
 
 
-    emails.push(
-        marco
-    );
-
-
-    const alleEmpfaenger = [
+    const weitereEmpfaenger = [
         e1,
         e2,
         e3,
@@ -760,7 +513,7 @@ function senden() {
     ];
 
 
-    alleEmpfaenger.forEach(
+    weitereEmpfaenger.forEach(
         email => {
 
             if (
@@ -768,11 +521,8 @@ function senden() {
                 !emails.includes(email)
             ) {
 
-                emails.push(
-                    email
-                );
+                emails.push(email);
             }
-
         }
     );
 
@@ -780,10 +530,6 @@ function senden() {
     const empfaengerString =
         emails.join(";");
 
-
-    /* -----------------------------------------------------
-       E-Mail öffnen
-       ----------------------------------------------------- */
 
     const subject =
         encodeURIComponent(
@@ -796,6 +542,15 @@ function senden() {
             text
         );
 
+
+    /*
+       Daten werden vor dem Öffnen des
+       Mailprogramms nicht in der URL der
+       Webseite übertragen.
+
+       mailto: wird vom Betriebssystem
+       an das Standard-Mailprogramm übergeben.
+    */
 
     window.location.href =
         "mailto:" +
@@ -813,28 +568,26 @@ function senden() {
 
 function abbrechen() {
 
-    const bestaetigung =
-        confirm(
+    if (
+        !confirm(
             "Möchtest du den Vorgang wirklich abbrechen?"
-        );
+        )
+    ) {
 
-
-    if (!bestaetigung) {
         return;
     }
 
 
     /*
-       Verschlüsselte Daten und Sicherheitscode
-       aus der Sitzung löschen.
+       Sensible Daten aus der Sitzung löschen.
     */
 
     sessionStorage.removeItem(
-        "v10_encrypted_data"
+        "v10_formular_daten"
     );
 
     sessionStorage.removeItem(
-        "v10_session_code"
+        "v10_authenticated"
     );
 
 
@@ -869,7 +622,6 @@ window.addEventListener(
 
 
         ladeDaten();
-
     }
 );
 
