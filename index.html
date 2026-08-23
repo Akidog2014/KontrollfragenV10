@@ -1,12 +1,20 @@
 <!DOCTYPE html>
 <html lang="de">
+
 <head>
+
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
 
 <title>Kontrollformular V10</title>
 
+
 <style>
+
 body {
     font-family: Arial, sans-serif;
     margin: 20px;
@@ -47,7 +55,7 @@ textarea {
 }
 
 .hidden {
-    display: none;
+    display: none !important;
 }
 
 .radio-group {
@@ -86,6 +94,11 @@ button {
     color: white;
 }
 
+.btn-red {
+    background-color: #dc3545;
+    color: white;
+}
+
 .btn-gray {
     background-color: #6c757d;
     color: white;
@@ -94,19 +107,26 @@ button {
 .security-box {
     border: 2px solid #333;
     border-radius: 8px;
-    padding: 15px;
+    padding: 18px;
     margin-bottom: 25px;
     background-color: #f5f5f5;
 }
 
 .security-title {
-    font-size: 18px;
+    font-size: 20px;
     font-weight: bold;
-    margin-bottom: 10px;
+    margin-bottom: 15px;
+}
+
+.security-subtitle {
+    font-size: 14px;
+    color: #555;
+    margin-bottom: 15px;
+    line-height: 1.5;
 }
 
 .status {
-    margin-top: 10px;
+    margin-top: 12px;
     font-weight: bold;
 }
 
@@ -121,65 +141,328 @@ button {
 .info {
     color: #555;
     font-size: 14px;
-    margin-top: 8px;
+    margin-top: 10px;
+    line-height: 1.5;
 }
 
-.locked {
-    display: none;
+.password-strength {
+    margin-top: 8px;
+    font-size: 14px;
 }
+
+.divider {
+    border-top: 1px solid #ccc;
+    margin-top: 20px;
+    padding-top: 20px;
+}
+
 </style>
+
 
 <script>
 
 /* =========================================================
-   V10 EINSTELLUNGEN
+   V10 SICHERHEIT
    ========================================================= */
 
 /*
-   HIER DEIN PASSWORT EINTRAGEN
+   Es gibt KEIN fest eingebautes Passwort.
+
+   Der Benutzer legt beim ersten Start selbst
+   ein Passwort fest.
+
+   Gespeichert wird nur der SHA-256-Hash.
 */
-const RICHTIGES_PASSWORT = "V10-2026";
+
+const PASSWORD_STORAGE_KEY =
+    "v10_password_hash";
+
+const SESSION_KEY =
+    "v10_authenticated";
+
+const FORM_DATA_KEY =
+    "v10_formular_daten";
 
 
 /* =========================================================
-   PASSWORT PRÜFEN
+   SHA-256 HASH
    ========================================================= */
 
-function passwortPruefen() {
+async function hashPasswort(passwort) {
+
+    const encoder =
+        new TextEncoder();
+
+    const daten =
+        encoder.encode(passwort);
+
+    const hashBuffer =
+        await crypto.subtle.digest(
+            "SHA-256",
+            daten
+        );
+
+    const hashArray =
+        Array.from(
+            new Uint8Array(hashBuffer)
+        );
+
+    return hashArray
+        .map(
+            byte =>
+                byte
+                    .toString(16)
+                    .padStart(2, "0")
+        )
+        .join("");
+}
+
+
+/* =========================================================
+   PRÜFEN, OB PASSWORT EXISTIERT
+   ========================================================= */
+
+function passwortExistiert() {
+
+    return Boolean(
+        localStorage.getItem(
+            PASSWORD_STORAGE_KEY
+        )
+    );
+}
+
+
+/* =========================================================
+   PASSWORT-FELDER ANZEIGEN
+   ========================================================= */
+
+function zeigePasswortBereich() {
+
+    const setup =
+        document.getElementById(
+            "passwort-erstmalig"
+        );
+
+    const login =
+        document.getElementById(
+            "passwort-login"
+        );
+
+    const aendern =
+        document.getElementById(
+            "passwort-aendern"
+        );
+
+
+    if (
+        passwortExistiert()
+    ) {
+
+        setup.classList.add(
+            "hidden"
+        );
+
+        login.classList.remove(
+            "hidden"
+        );
+
+        aendern.classList.remove(
+            "hidden"
+        );
+
+    } else {
+
+        setup.classList.remove(
+            "hidden"
+        );
+
+        login.classList.add(
+            "hidden"
+        );
+
+        aendern.classList.add(
+            "hidden"
+        );
+    }
+}
+
+
+/* =========================================================
+   ERSTES PASSWORT FESTLEGEN
+   ========================================================= */
+
+async function passwortEinrichten() {
 
     const passwort =
-        document.getElementById("passwort").value;
+        document.getElementById(
+            "neues-passwort"
+        ).value;
+
+    const wiederholung =
+        document.getElementById(
+            "neues-passwort-wiederholen"
+        ).value;
 
     const status =
-        document.getElementById("password-status");
+        document.getElementById(
+            "setup-status"
+        );
 
-    if (passwort === RICHTIGES_PASSWORT) {
+
+    if (passwort.length < 6) {
+
+        status.textContent =
+            "Das Passwort muss mindestens 6 Zeichen lang sein.";
+
+        status.className =
+            "status error";
+
+        return;
+    }
+
+
+    if (
+        passwort !== wiederholung
+    ) {
+
+        status.textContent =
+            "Die beiden Passwörter stimmen nicht überein.";
+
+        status.className =
+            "status error";
+
+        return;
+    }
+
+
+    const hash =
+        await hashPasswort(
+            passwort
+        );
+
+
+    localStorage.setItem(
+        PASSWORD_STORAGE_KEY,
+        hash
+    );
+
+
+    document.getElementById(
+        "neues-passwort"
+    ).value = "";
+
+    document.getElementById(
+        "neues-passwort-wiederholen"
+    ).value = "";
+
+
+    status.textContent =
+        "Passwort wurde erfolgreich festgelegt.";
+
+    status.className =
+        "status success";
+
+
+    setTimeout(
+        function() {
+
+            zeigePasswortBereich();
+
+            document.getElementById(
+                "passwort"
+            ).focus();
+
+        },
+        700
+    );
+}
+
+
+/* =========================================================
+   PASSWORT EINLOGGEN
+   ========================================================= */
+
+async function passwortPruefen() {
+
+    const passwort =
+        document.getElementById(
+            "passwort"
+        ).value;
+
+    const status =
+        document.getElementById(
+            "login-status"
+        );
+
+
+    if (!passwort) {
+
+        status.textContent =
+            "Bitte Passwort eingeben.";
+
+        status.className =
+            "status error";
+
+        return;
+    }
+
+
+    const eingegebenerHash =
+        await hashPasswort(
+            passwort
+        );
+
+    const gespeicherterHash =
+        localStorage.getItem(
+            PASSWORD_STORAGE_KEY
+        );
+
+
+    if (
+        eingegebenerHash ===
+        gespeicherterHash
+    ) {
 
         /*
-           Passwort nur für die aktuelle Browser-Sitzung
-           merken.
-
-           Es wird NICHT an email.html übergeben.
+           Nur für die aktuelle Sitzung
+           freischalten.
         */
 
         sessionStorage.setItem(
-            "v10_authenticated",
+            SESSION_KEY,
             "true"
         );
 
+
         status.textContent =
-            "Passwort korrekt. Formular freigegeben.";
+            "Passwort korrekt.";
 
         status.className =
             "status success";
 
-        document
-            .getElementById("login-bereich")
-            .classList.add("hidden");
+
+        document.getElementById(
+            "passwort"
+        ).value = "";
+
 
         document
-            .getElementById("formular")
-            .classList.remove("hidden");
+            .getElementById(
+                "login-bereich"
+            )
+            .classList.add(
+                "hidden"
+            );
+
+
+        document
+            .getElementById(
+                "formular"
+            )
+            .classList.remove(
+                "hidden"
+            );
+
 
     } else {
 
@@ -188,6 +471,7 @@ function passwortPruefen() {
 
         status.className =
             "status error";
+
 
         document.getElementById(
             "passwort"
@@ -200,11 +484,15 @@ function passwortPruefen() {
 }
 
 
-/* Enter-Taste im Passwortfeld */
+/* =========================================================
+   ENTER-TASTE
+   ========================================================= */
 
 function passwortEnter(event) {
 
-    if (event.key === "Enter") {
+    if (
+        event.key === "Enter"
+    ) {
 
         passwortPruefen();
     }
@@ -212,29 +500,192 @@ function passwortEnter(event) {
 
 
 /* =========================================================
-   GEBURTSDATUM
+   PASSWORT ÄNDERN
    ========================================================= */
 
-function formatGeburtsdatum(input) {
+function passwortAendernAnzeigen() {
 
-    let v =
-        input.value.replace(/\D/g, "");
+    document
+        .getElementById(
+            "passwort-login"
+        )
+        .classList.add(
+            "hidden"
+        );
 
-    if (v.length >= 2) {
-        v =
-            v.slice(0, 2) +
-            "." +
-            v.slice(2);
+    document
+        .getElementById(
+            "passwort-aendern"
+        )
+        .classList.remove(
+            "hidden"
+        );
+}
+
+
+async function passwortAendern() {
+
+    const altesPasswort =
+        document.getElementById(
+            "altes-passwort"
+        ).value;
+
+    const neuesPasswort =
+        document.getElementById(
+            "aendern-neues-passwort"
+        ).value;
+
+    const wiederholung =
+        document.getElementById(
+            "aendern-neues-passwort-wiederholen"
+        ).value;
+
+    const status =
+        document.getElementById(
+            "change-status"
+        );
+
+
+    if (!altesPasswort) {
+
+        status.textContent =
+            "Bitte zuerst das bisherige Passwort eingeben.";
+
+        status.className =
+            "status error";
+
+        return;
     }
 
-    if (v.length >= 5) {
-        v =
-            v.slice(0, 5) +
-            "." +
-            v.slice(5, 9);
+
+    const altesHash =
+        await hashPasswort(
+            altesPasswort
+        );
+
+    const gespeicherterHash =
+        localStorage.getItem(
+            PASSWORD_STORAGE_KEY
+        );
+
+
+    if (
+        altesHash !==
+        gespeicherterHash
+    ) {
+
+        status.textContent =
+            "Das bisherige Passwort ist falsch.";
+
+        status.className =
+            "status error";
+
+        return;
     }
 
-    input.value = v;
+
+    if (
+        neuesPasswort.length < 6
+    ) {
+
+        status.textContent =
+            "Das neue Passwort muss mindestens 6 Zeichen lang sein.";
+
+        status.className =
+            "status error";
+
+        return;
+    }
+
+
+    if (
+        neuesPasswort !==
+        wiederholung
+    ) {
+
+        status.textContent =
+            "Die neuen Passwörter stimmen nicht überein.";
+
+        status.className =
+            "status error";
+
+        return;
+    }
+
+
+    const neuerHash =
+        await hashPasswort(
+            neuesPasswort
+        );
+
+
+    localStorage.setItem(
+        PASSWORD_STORAGE_KEY,
+        neuerHash
+    );
+
+
+    /*
+       Aktuelle Sitzung beenden.
+       Danach muss das neue Passwort
+       eingegeben werden.
+    */
+
+    sessionStorage.removeItem(
+        SESSION_KEY
+    );
+
+
+    document.getElementById(
+        "altes-passwort"
+    ).value = "";
+
+    document.getElementById(
+        "aendern-neues-passwort"
+    ).value = "";
+
+    document.getElementById(
+        "aendern-neues-passwort-wiederholen"
+    ).value = "";
+
+
+    status.textContent =
+        "Passwort wurde geändert. Bitte mit dem neuen Passwort anmelden.";
+
+    status.className =
+        "status success";
+
+
+    setTimeout(
+        function() {
+
+            document
+                .getElementById(
+                    "passwort-aendern"
+                )
+                .classList.add(
+                    "hidden"
+                );
+
+            document
+                .getElementById(
+                    "passwort-login"
+                )
+                .classList.remove(
+                    "hidden"
+                );
+
+            document
+                .getElementById(
+                    "formular"
+                )
+                .classList.add(
+                    "hidden"
+                );
+
+        },
+        1200
+    );
 }
 
 
@@ -245,15 +696,25 @@ function formatGeburtsdatum(input) {
 function alkoholClicked() {
 
     document
-        .getElementById("alkohol-section")
-        .classList.remove("hidden");
+        .getElementById(
+            "alkohol-section"
+        )
+        .classList.remove(
+            "hidden"
+        );
 
-    const jetzt = new Date();
+
+    const jetzt =
+        new Date();
+
 
     document.getElementById(
         "alkohol-datum"
     ).value =
-        jetzt.toLocaleDateString("de-CH");
+        jetzt.toLocaleDateString(
+            "de-CH"
+        );
+
 
     document.getElementById(
         "alkohol-zeit"
@@ -275,15 +736,25 @@ function alkoholClicked() {
 function drogenClicked() {
 
     document
-        .getElementById("drogen-section")
-        .classList.remove("hidden");
+        .getElementById(
+            "drogen-section"
+        )
+        .classList.remove(
+            "hidden"
+        );
 
-    const jetzt = new Date();
+
+    const jetzt =
+        new Date();
+
 
     document.getElementById(
         "drogen-datum"
     ).value =
-        jetzt.toLocaleDateString("de-CH");
+        jetzt.toLocaleDateString(
+            "de-CH"
+        );
+
 
     document.getElementById(
         "drogen-zeit"
@@ -309,8 +780,11 @@ function drogenPositivChanged() {
             "drogen-pos"
         ).checked;
 
+
     document
-        .getElementById("drogen-checklist")
+        .getElementById(
+            "drogen-checklist"
+        )
         .classList.toggle(
             "hidden",
             !positiv
@@ -319,7 +793,7 @@ function drogenPositivChanged() {
 
 
 /* =========================================================
-   JA / NEIN TEXTFELDER
+   TEXTFELDER JA / NEIN
    ========================================================= */
 
 function toggleTextfield(qid) {
@@ -334,6 +808,7 @@ function toggleTextfield(qid) {
             qid + "-textarea"
         );
 
+
     textarea.classList.toggle(
         "hidden",
         !ja.checked
@@ -342,7 +817,7 @@ function toggleTextfield(qid) {
 
 
 /* =========================================================
-   FORMULAR TEXT ERSTELLEN
+   FORMULARDATEN ERSTELLEN
    ========================================================= */
 
 function erstelleFormularText() {
@@ -383,9 +858,7 @@ function erstelleFormularText() {
         "\n\n";
 
 
-    /* =====================================================
-       ALKOHOL
-       ===================================================== */
+    /* ALKOHOL */
 
     if (
         !document
@@ -412,6 +885,7 @@ function erstelleFormularText() {
                 "alkoholwert"
             ).value;
 
+
         text +=
             "Alkoholkontrolle:\n";
 
@@ -432,9 +906,7 @@ function erstelleFormularText() {
     }
 
 
-    /* =====================================================
-       DROGEN
-       ===================================================== */
+    /* DROGEN */
 
     if (
         !document
@@ -456,6 +928,7 @@ function erstelleFormularText() {
                 "drogen-zeit"
             ).value;
 
+
         text +=
             "Drogenkontrolle:\n";
 
@@ -474,11 +947,13 @@ function erstelleFormularText() {
             document
                 .getElementById(
                     "drogen-pos"
-                ).checked
+                )
+                .checked
         ) {
 
             text +=
                 "Resultat: positiv\n";
+
 
             const drogenArten = [
                 "can",
@@ -488,7 +963,9 @@ function erstelleFormularText() {
                 "opi"
             ];
 
+
             let any = false;
+
 
             drogenArten.forEach(
                 d => {
@@ -498,7 +975,10 @@ function erstelleFormularText() {
                             "drogen-" + d
                         );
 
-                    if (el.checked) {
+
+                    if (
+                        el.checked
+                    ) {
 
                         text +=
                             "- " +
@@ -512,11 +992,13 @@ function erstelleFormularText() {
                 }
             );
 
+
             if (!any) {
 
                 text +=
                     "(Keine Substanzen ausgewählt)\n";
             }
+
 
             text += "\n";
         }
@@ -526,7 +1008,8 @@ function erstelleFormularText() {
             document
                 .getElementById(
                     "drogen-neg"
-                ).checked
+                )
+                .checked
         ) {
 
             text +=
@@ -535,9 +1018,7 @@ function erstelleFormularText() {
     }
 
 
-    /* =====================================================
-       WEITERE FRAGEN
-       ===================================================== */
+    /* WEITERE FRAGEN */
 
     const fragen = [
 
@@ -582,6 +1063,7 @@ function erstelleFormularText() {
             text:
                 "Müssen Sie etwas Dringendes erledigen?"
         }
+
     ];
 
 
@@ -643,24 +1125,26 @@ function erstelleFormularText() {
 
 
 /* =========================================================
-   DATEN VORBEREITEN UND ZU EMAIL.HTML
+   ZU EMAIL.HTML
    ========================================================= */
 
 function emailSeiteOeffnen() {
 
     /*
-       Sicherheitsprüfung
+       Prüfen, ob die Sitzung freigeschaltet ist.
     */
 
     if (
         sessionStorage.getItem(
-            "v10_authenticated"
+            SESSION_KEY
         ) !== "true"
     ) {
 
         alert(
             "Bitte zuerst das Passwort eingeben."
         );
+
+        location.reload();
 
         return;
     }
@@ -671,21 +1155,18 @@ function emailSeiteOeffnen() {
 
 
     /*
-       Die Formulardaten werden in der Sitzung
-       zwischengespeichert.
-
-       Es wird NICHT die URL verwendet.
+       Formulardaten nur für die aktuelle Sitzung
+       speichern.
     */
 
     sessionStorage.setItem(
-        "v10_formular_daten",
+        FORM_DATA_KEY,
         text
     );
 
 
     /*
-       Auf der E-Mail-Seite wird kein Passwort
-       mehr benötigt.
+       Passwort wird NICHT mitgegeben.
     */
 
     window.location.href =
@@ -694,7 +1175,35 @@ function emailSeiteOeffnen() {
 
 
 /* =========================================================
-   SEITE LADEN
+   FORMULAR VERLASSEN
+   ========================================================= */
+
+function sperren() {
+
+    sessionStorage.removeItem(
+        SESSION_KEY
+    );
+
+    sessionStorage.removeItem(
+        FORM_DATA_KEY
+    );
+
+
+    document
+        .getElementById(
+            "formular"
+        )
+        .classList.add(
+            "hidden"
+        );
+
+
+    zeigePasswortBereich();
+}
+
+
+/* =========================================================
+   START
    ========================================================= */
 
 window.addEventListener(
@@ -702,28 +1211,50 @@ window.addEventListener(
     function() {
 
         /*
-           Alte Daten löschen, wenn index.html
-           neu gestartet wird.
+           Falls noch keine Passwortprüfung
+           stattgefunden hat, Formular sperren.
         */
 
-        sessionStorage.removeItem(
-            "v10_formular_daten"
-        );
-
-        sessionStorage.removeItem(
-            "v10_authenticated"
-        );
-
-
         document
-            .getElementById("passwort")
-            .focus();
+            .getElementById(
+                "formular"
+            )
+            .classList.add(
+                "hidden"
+            );
+
+
+        zeigePasswortBereich();
+
+
+        /*
+           Falls Passwort bereits existiert,
+           Eingabefeld fokussieren.
+        */
+
+        setTimeout(
+            function() {
+
+                if (
+                    passwortExistiert()
+                ) {
+
+                    document
+                        .getElementById(
+                            "passwort"
+                        )
+                        .focus();
+                }
+            },
+            100
+        );
     }
 );
 
 </script>
 
 </head>
+
 
 <body>
 
@@ -734,51 +1265,218 @@ window.addEventListener(
 
 
 <!-- =====================================================
-     PASSWORTBEREICH
+     ERSTMALIGES PASSWORT FESTLEGEN
      ===================================================== -->
 
 <div
-    id="login-bereich"
-    class="security-box"
+    id="passwort-erstmalig"
+    class="security-box hidden"
 >
 
     <div class="security-title">
-        Sicherheitsstufe V10
+        🔐 Sicherheitsstufe V10 einrichten
     </div>
 
 
-    <label for="passwort">
-        Passwort:
-    </label>
+    <div class="security-subtitle">
 
+        Dies ist der erste Start des Formulars.
+        Bitte legen Sie selbst ein persönliches
+        Passwort fest.
+
+        <br><br>
+
+        Das Passwort wird nicht im HTML-Code
+        gespeichert. Gespeichert wird lediglich
+        ein SHA-256-Hash.
+
+    </div>
+
+
+    <label>
+        Neues Passwort:
+    </label>
 
     <input
         type="password"
-        id="passwort"
-        autocomplete="off"
-        placeholder="Passwort eingeben"
-        onkeydown="passwortEnter(event)"
+        id="neues-passwort"
+        autocomplete="new-password"
+        placeholder="Mindestens 6 Zeichen"
+    >
+
+
+    <label>
+        Passwort wiederholen:
+    </label>
+
+    <input
+        type="password"
+        id="neues-passwort-wiederholen"
+        autocomplete="new-password"
+        placeholder="Passwort wiederholen"
     >
 
 
     <button
         type="button"
         class="btn-blue"
-        onclick="passwortPruefen()"
+        onclick="passwortEinrichten()"
     >
-        Passwort bestätigen
+        Passwort speichern
     </button>
 
 
     <div
-        id="password-status"
+        id="setup-status"
         class="status"
     ></div>
 
+</div>
 
-    <div class="info">
-        Ohne korrektes Passwort kann das Formular
-        nicht geöffnet werden.
+
+<!-- =====================================================
+     LOGIN
+     ===================================================== -->
+
+<div
+    id="login-bereich"
+    class="security-box hidden"
+>
+
+    <div class="security-title">
+        🔐 Kontrollformular gesperrt
+    </div>
+
+
+    <div class="security-subtitle">
+
+        Bitte geben Sie Ihr persönliches Passwort
+        ein, um das Kontrollformular zu öffnen.
+
+    </div>
+
+
+    <div
+        id="passwort-login"
+    >
+
+        <label>
+            Passwort:
+        </label>
+
+
+        <input
+            type="password"
+            id="passwort"
+            autocomplete="current-password"
+            placeholder="Passwort eingeben"
+            onkeydown="passwortEnter(event)"
+        >
+
+
+        <button
+            type="button"
+            class="btn-blue"
+            onclick="passwortPruefen()"
+        >
+            Entsperren
+        </button>
+
+
+        <div
+            id="login-status"
+            class="status"
+        ></div>
+
+
+        <div class="divider">
+
+            <button
+                type="button"
+                class="btn-gray"
+                onclick="passwortAendernAnzeigen()"
+            >
+                Passwort ändern
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- =================================================
+         PASSWORT ÄNDERN
+         ================================================= -->
+
+    <div
+        id="passwort-aendern"
+        class="hidden"
+    >
+
+        <div class="security-title">
+            Passwort ändern
+        </div>
+
+
+        <label>
+            Bisheriges Passwort:
+        </label>
+
+        <input
+            type="password"
+            id="altes-passwort"
+            autocomplete="current-password"
+        >
+
+
+        <label>
+            Neues Passwort:
+        </label>
+
+        <input
+            type="password"
+            id="aendern-neues-passwort"
+            autocomplete="new-password"
+        >
+
+
+        <label>
+            Neues Passwort wiederholen:
+        </label>
+
+        <input
+            type="password"
+            id="aendern-neues-passwort-wiederholen"
+            autocomplete="new-password"
+        >
+
+
+        <button
+            type="button"
+            class="btn-blue"
+            onclick="passwortAendern()"
+        >
+            Neues Passwort speichern
+        </button>
+
+
+        <button
+            type="button"
+            class="btn-gray"
+            onclick="
+                document.getElementById('passwort-aendern').classList.add('hidden');
+                document.getElementById('passwort-login').classList.remove('hidden');
+            "
+        >
+            Zurück
+        </button>
+
+
+        <div
+            id="change-status"
+            class="status"
+        ></div>
+
     </div>
 
 </div>
@@ -793,6 +1491,25 @@ window.addEventListener(
     class="hidden"
 >
 
+
+<div class="security-box">
+
+    <div class="security-title">
+        Formular freigegeben
+    </div>
+
+    <div class="security-subtitle">
+        Sicherheitsstufe V10 aktiv.
+        Nach dem Klick auf „E-Mail senden“
+        gelangen Sie direkt zur Empfängerauswahl.
+        Dort ist keine erneute Passworteingabe
+        erforderlich.
+    </div>
+
+</div>
+
+
+<!-- PERSONALIEN -->
 
 <div class="section">
 
@@ -941,47 +1658,62 @@ window.addEventListener(
     >
 
         <label class="sub-option">
+
             <input
                 type="checkbox"
                 id="drogen-can"
             >
+
             Cannabis
+
         </label>
 
 
         <label class="sub-option">
+
             <input
                 type="checkbox"
                 id="drogen-benzo"
             >
+
             Benzodiazepine
+
         </label>
 
 
         <label class="sub-option">
+
             <input
                 type="checkbox"
                 id="drogen-amp"
             >
+
             Amphetamine
+
         </label>
 
 
         <label class="sub-option">
+
             <input
                 type="checkbox"
                 id="drogen-kok"
             >
+
             Kokain
+
         </label>
 
 
         <label class="sub-option">
+
             <input
                 type="checkbox"
                 id="drogen-opi"
             >
+
             Opiate
+
         </label>
 
     </div>
@@ -997,6 +1729,8 @@ window.addEventListener(
     Weitere Fragen
 </h3>
 
+
+<!-- Krankheit -->
 
 <div>
 
@@ -1034,6 +1768,8 @@ Nein
 </div>
 
 
+<!-- Ärztliche Behandlung -->
+
 <div>
 
 <label>
@@ -1069,6 +1805,8 @@ Nein
 
 </div>
 
+
+<!-- Medikamente -->
 
 <div>
 
@@ -1106,6 +1844,8 @@ Nein
 </div>
 
 
+<!-- Weitere Personen -->
+
 <div>
 
 <label>
@@ -1141,6 +1881,8 @@ Nein
 
 </div>
 
+
+<!-- Personen in Obhut -->
 
 <div>
 
@@ -1178,6 +1920,8 @@ Nein
 </div>
 
 
+<!-- Tiere -->
+
 <div>
 
 <label>
@@ -1213,6 +1957,8 @@ Nein
 
 </div>
 
+
+<!-- Dringend -->
 
 <div>
 
@@ -1254,7 +2000,7 @@ Nein
 
 
 <!-- =====================================================
-     E-MAIL BUTTON
+     E-MAIL SENDEN
      ===================================================== -->
 
 <button
@@ -1266,7 +2012,18 @@ Nein
 </button>
 
 
+<button
+    type="button"
+    class="btn-gray"
+    onclick="sperren()"
+>
+    Formular sperren
+</button>
+
+
 </div>
 
+
 </body>
+
 </html>
