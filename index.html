@@ -7,259 +7,240 @@
 <title>Kontrollformular V10</title>
 
 <style>
-    body {
-        font-family: Arial, sans-serif;
-        margin: 20px;
-        max-width: 700px;
-        margin-left: auto;
-        margin-right: auto;
-    }
+body {
+    font-family: Arial, sans-serif;
+    margin: 20px;
+    max-width: 700px;
+    margin-left: auto;
+    margin-right: auto;
+}
 
-    h2 {
-        margin-bottom: 20px;
-    }
+h2 {
+    margin-bottom: 20px;
+}
 
-    h3 {
-        margin-top: 25px;
-    }
+h3 {
+    margin-top: 25px;
+}
 
-    .section {
-        margin-bottom: 20px;
-    }
+.section {
+    margin-bottom: 20px;
+}
 
-    label {
-        font-weight: bold;
-        display: block;
-        margin-top: 10px;
-    }
+label {
+    font-weight: bold;
+    display: block;
+    margin-top: 10px;
+}
 
-    input,
-    textarea,
-    select {
-        box-sizing: border-box;
-        padding: 8px;
-        width: 100%;
-        margin-top: 5px;
-        font-size: 16px;
-    }
+input,
+textarea {
+    box-sizing: border-box;
+    padding: 8px;
+    width: 100%;
+    margin-top: 5px;
+    font-size: 16px;
+}
 
-    textarea {
-        resize: vertical;
-    }
+textarea {
+    resize: vertical;
+}
 
-    .hidden {
-        display: none;
-    }
+.hidden {
+    display: none;
+}
 
-    .radio-group {
-        margin-top: 5px;
-        margin-bottom: 5px;
-    }
+.radio-group {
+    margin-top: 5px;
+    margin-bottom: 5px;
+}
 
-    .radio-group input {
-        width: auto;
-        margin-right: 5px;
-    }
+.radio-group input {
+    width: auto;
+    margin-right: 5px;
+}
 
-    .checkbox-group input {
-        width: auto;
-        margin-right: 5px;
-    }
+.sub-option {
+    margin-left: 25px;
+    font-weight: normal;
+}
 
-    .sub-option {
-        margin-left: 25px;
-        font-weight: normal;
-    }
+button {
+    box-sizing: border-box;
+    padding: 12px;
+    font-size: 16px;
+    margin-top: 8px;
+    width: 100%;
+    cursor: pointer;
+    border: none;
+    border-radius: 5px;
+}
 
-    button {
-        box-sizing: border-box;
-        padding: 12px;
-        font-size: 16px;
-        margin-top: 8px;
-        width: 100%;
-        cursor: pointer;
-        border: none;
-        border-radius: 5px;
-    }
+.btn-blue {
+    background-color: #007bff;
+    color: white;
+}
 
-    .btn-normal {
-        background-color: #007bff;
-        color: white;
-    }
+.btn-green {
+    background-color: #28a745;
+    color: white;
+}
 
-    .btn-green {
-        background-color: #28a745;
-        color: white;
-    }
+.btn-gray {
+    background-color: #6c757d;
+    color: white;
+}
 
-    .btn-disabled {
-        background-color: #888;
-        color: white;
-        cursor: not-allowed;
-    }
+.security-box {
+    border: 2px solid #333;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 25px;
+    background-color: #f5f5f5;
+}
 
-    .security-box {
-        border: 2px solid #333;
-        border-radius: 8px;
-        padding: 15px;
-        margin-bottom: 25px;
-        background-color: #f5f5f5;
-    }
+.security-title {
+    font-size: 18px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
 
-    .security-title {
-        font-size: 18px;
-        font-weight: bold;
-        margin-bottom: 10px;
-    }
+.status {
+    margin-top: 10px;
+    font-weight: bold;
+}
 
-    .status {
-        margin-top: 10px;
-        font-weight: bold;
-    }
+.success {
+    color: #198754;
+}
 
-    .success {
-        color: #198754;
-    }
+.error {
+    color: #dc3545;
+}
 
-    .error {
-        color: #dc3545;
-    }
+.info {
+    color: #555;
+    font-size: 14px;
+    margin-top: 8px;
+}
 
-    .info {
-        color: #555;
-        font-size: 14px;
-        margin-top: 8px;
-    }
-
-    .locked {
-        opacity: 0.5;
-        pointer-events: none;
-    }
+.locked {
+    display: none;
+}
 </style>
 
 <script>
 
 /* =========================================================
-   V10 - SICHERHEIT
+   V10 EINSTELLUNGEN
    ========================================================= */
 
-const V10_VERSION = "V10";
+/*
+   HIER DEIN PASSWORT EINTRAGEN
+*/
+const RICHTIGES_PASSWORT = "V10-2026";
 
-let verschluesselteDatenVorhanden = false;
 
+/* =========================================================
+   PASSWORT PRÜFEN
+   ========================================================= */
 
-/* ---------------------------------------------------------
-   SHA-256 / PBKDF2 Schlüssel aus Sicherheitscode erzeugen
-   --------------------------------------------------------- */
+function passwortPruefen() {
 
-async function erstelleSchluessel(passwort) {
+    const passwort =
+        document.getElementById("passwort").value;
 
-    const encoder = new TextEncoder();
+    const status =
+        document.getElementById("password-status");
 
-    const passwortBytes = encoder.encode(passwort);
+    if (passwort === RICHTIGES_PASSWORT) {
 
-    const baseKey = await crypto.subtle.importKey(
-        "raw",
-        passwortBytes,
-        "PBKDF2",
-        false,
-        ["deriveKey"]
-    );
+        /*
+           Passwort nur für die aktuelle Browser-Sitzung
+           merken.
 
-    /*
-       Fester Salt für diese Anwendung.
-       Der Sicherheitscode selbst wird NICHT gespeichert.
-    */
+           Es wird NICHT an email.html übergeben.
+        */
 
-    const salt = encoder.encode("Kontrollformular-V10-Salt-2026");
+        sessionStorage.setItem(
+            "v10_authenticated",
+            "true"
+        );
 
-    return await crypto.subtle.deriveKey(
-        {
-            name: "PBKDF2",
-            salt: salt,
-            iterations: 150000,
-            hash: "SHA-256"
-        },
-        baseKey,
-        {
-            name: "AES-GCM",
-            length: 256
-        },
-        false,
-        ["encrypt", "decrypt"]
-    );
+        status.textContent =
+            "Passwort korrekt. Formular freigegeben.";
+
+        status.className =
+            "status success";
+
+        document
+            .getElementById("login-bereich")
+            .classList.add("hidden");
+
+        document
+            .getElementById("formular")
+            .classList.remove("hidden");
+
+    } else {
+
+        status.textContent =
+            "Falsches Passwort.";
+
+        status.className =
+            "status error";
+
+        document.getElementById(
+            "passwort"
+        ).value = "";
+
+        document.getElementById(
+            "passwort"
+        ).focus();
+    }
 }
 
 
-/* ---------------------------------------------------------
-   Daten verschlüsseln
-   --------------------------------------------------------- */
+/* Enter-Taste im Passwortfeld */
 
-async function verschluesseln(text, schluessel) {
+function passwortEnter(event) {
 
-    const encoder = new TextEncoder();
+    if (event.key === "Enter") {
 
-    const iv = crypto.getRandomValues(
-        new Uint8Array(12)
-    );
-
-    const verschluesselt = await crypto.subtle.encrypt(
-        {
-            name: "AES-GCM",
-            iv: iv
-        },
-        schluessel,
-        encoder.encode(text)
-    );
-
-    return {
-        iv: arrayBufferZuBase64(iv),
-        data: arrayBufferZuBase64(verschluesselt)
-    };
+        passwortPruefen();
+    }
 }
 
 
-/* ---------------------------------------------------------
-   ArrayBuffer / Uint8Array -> Base64
-   --------------------------------------------------------- */
-
-function arrayBufferZuBase64(buffer) {
-
-    const bytes = new Uint8Array(buffer);
-
-    let binary = "";
-
-    bytes.forEach(byte => {
-        binary += String.fromCharCode(byte);
-    });
-
-    return btoa(binary);
-}
-
-
-/* ---------------------------------------------------------
-   Geburtsdatum formatieren
-   --------------------------------------------------------- */
+/* =========================================================
+   GEBURTSDATUM
+   ========================================================= */
 
 function formatGeburtsdatum(input) {
 
-    let v = input.value.replace(/\D/g, "");
+    let v =
+        input.value.replace(/\D/g, "");
 
     if (v.length >= 2) {
-        v = v.slice(0, 2) + "." + v.slice(2);
+        v =
+            v.slice(0, 2) +
+            "." +
+            v.slice(2);
     }
 
     if (v.length >= 5) {
-        v = v.slice(0, 5) + "." + v.slice(5, 9);
+        v =
+            v.slice(0, 5) +
+            "." +
+            v.slice(5, 9);
     }
 
     input.value = v;
 }
 
 
-/* ---------------------------------------------------------
-   Alkohol Button
-   --------------------------------------------------------- */
+/* =========================================================
+   ALKOHOL
+   ========================================================= */
 
 function alkoholClicked() {
 
@@ -269,10 +250,14 @@ function alkoholClicked() {
 
     const jetzt = new Date();
 
-    document.getElementById("alkohol-datum").value =
+    document.getElementById(
+        "alkohol-datum"
+    ).value =
         jetzt.toLocaleDateString("de-CH");
 
-    document.getElementById("alkohol-zeit").value =
+    document.getElementById(
+        "alkohol-zeit"
+    ).value =
         jetzt.toLocaleTimeString(
             "de-CH",
             {
@@ -283,9 +268,9 @@ function alkoholClicked() {
 }
 
 
-/* ---------------------------------------------------------
-   Drogen Button
-   --------------------------------------------------------- */
+/* =========================================================
+   DROGEN
+   ========================================================= */
 
 function drogenClicked() {
 
@@ -295,10 +280,14 @@ function drogenClicked() {
 
     const jetzt = new Date();
 
-    document.getElementById("drogen-datum").value =
+    document.getElementById(
+        "drogen-datum"
+    ).value =
         jetzt.toLocaleDateString("de-CH");
 
-    document.getElementById("drogen-zeit").value =
+    document.getElementById(
+        "drogen-zeit"
+    ).value =
         jetzt.toLocaleTimeString(
             "de-CH",
             {
@@ -309,126 +298,187 @@ function drogenClicked() {
 }
 
 
-/* ---------------------------------------------------------
-   Drogen positiv
-   --------------------------------------------------------- */
+/* =========================================================
+   DROGEN POSITIV
+   ========================================================= */
 
 function drogenPositivChanged() {
 
-    const pos =
-        document.getElementById("drogen-pos").checked;
+    const positiv =
+        document.getElementById(
+            "drogen-pos"
+        ).checked;
 
     document
         .getElementById("drogen-checklist")
         .classList.toggle(
             "hidden",
-            !pos
+            !positiv
         );
 }
 
 
-/* ---------------------------------------------------------
-   Ja/Nein Textfeld
-   --------------------------------------------------------- */
+/* =========================================================
+   JA / NEIN TEXTFELDER
+   ========================================================= */
 
 function toggleTextfield(qid) {
 
-    const jaRadio =
-        document.getElementById(qid + "-ja");
+    const ja =
+        document.getElementById(
+            qid + "-ja"
+        );
 
     const textarea =
-        document.getElementById(qid + "-textarea");
+        document.getElementById(
+            qid + "-textarea"
+        );
 
     textarea.classList.toggle(
         "hidden",
-        !jaRadio.checked
+        !ja.checked
     );
 }
 
 
 /* =========================================================
-   FORMULARDATEN SAMMELN
+   FORMULAR TEXT ERSTELLEN
    ========================================================= */
 
 function erstelleFormularText() {
 
     const name =
-        document.getElementById("name").value.trim();
+        document.getElementById(
+            "name"
+        ).value.trim();
 
     const vorname =
-        document.getElementById("vorname").value.trim();
+        document.getElementById(
+            "vorname"
+        ).value.trim();
 
     const geburtsdatum =
-        document.getElementById("geburtsdatum").value.trim();
+        document.getElementById(
+            "geburtsdatum"
+        ).value.trim();
 
 
-    let text = "";
-
-    text += "Info Festnahme\n";
-    text += "Sicherheitsstufe: " + V10_VERSION + "\n";
-    text += "\n";
-
-    text += "Name: " + name + "\n";
-    text += "Vorname: " + vorname + "\n";
-    text += "Geburtsdatum: " + geburtsdatum + "\n";
-    text += "\n";
+    let text =
+        "Info Festnahme\n\n";
 
 
-    /* -----------------------------------------------------
-       Alkohol
-       ----------------------------------------------------- */
+    text +=
+        "Name: " +
+        name +
+        "\n";
+
+    text +=
+        "Vorname: " +
+        vorname +
+        "\n";
+
+    text +=
+        "Geburtsdatum: " +
+        geburtsdatum +
+        "\n\n";
+
+
+    /* =====================================================
+       ALKOHOL
+       ===================================================== */
 
     if (
         !document
-            .getElementById("alkohol-section")
-            .classList.contains("hidden")
+            .getElementById(
+                "alkohol-section"
+            )
+            .classList.contains(
+                "hidden"
+            )
     ) {
 
         const datum =
-            document.getElementById("alkohol-datum").value;
+            document.getElementById(
+                "alkohol-datum"
+            ).value;
 
         const zeit =
-            document.getElementById("alkohol-zeit").value;
+            document.getElementById(
+                "alkohol-zeit"
+            ).value;
 
         const wert =
-            document.getElementById("alkoholwert").value;
+            document.getElementById(
+                "alkoholwert"
+            ).value;
 
-        text += "Alkoholkontrolle:\n";
-        text += "Datum: " + datum + "\n";
-        text += "Zeit: " + zeit + "\n";
-        text += "Wert: " + wert + "\n";
-        text += "\n";
+        text +=
+            "Alkoholkontrolle:\n";
+
+        text +=
+            "Datum: " +
+            datum +
+            "\n";
+
+        text +=
+            "Zeit: " +
+            zeit +
+            "\n";
+
+        text +=
+            "Wert: " +
+            wert +
+            "\n\n";
     }
 
 
-    /* -----------------------------------------------------
-       Drogen
-       ----------------------------------------------------- */
+    /* =====================================================
+       DROGEN
+       ===================================================== */
 
     if (
         !document
-            .getElementById("drogen-section")
-            .classList.contains("hidden")
+            .getElementById(
+                "drogen-section"
+            )
+            .classList.contains(
+                "hidden"
+            )
     ) {
 
         const datum =
-            document.getElementById("drogen-datum").value;
+            document.getElementById(
+                "drogen-datum"
+            ).value;
 
         const zeit =
-            document.getElementById("drogen-zeit").value;
+            document.getElementById(
+                "drogen-zeit"
+            ).value;
 
-        text += "Drogenkontrolle:\n";
-        text += "Datum: " + datum + "\n";
-        text += "Zeit: " + zeit + "\n";
+        text +=
+            "Drogenkontrolle:\n";
+
+        text +=
+            "Datum: " +
+            datum +
+            "\n";
+
+        text +=
+            "Zeit: " +
+            zeit +
+            "\n";
 
 
         if (
             document
-                .getElementById("drogen-pos")
-                .checked
+                .getElementById(
+                    "drogen-pos"
+                ).checked
         ) {
 
-            text += "Resultat: positiv\n";
+            text +=
+                "Resultat: positiv\n";
 
             const drogenArten = [
                 "can",
@@ -440,25 +490,30 @@ function erstelleFormularText() {
 
             let any = false;
 
-            drogenArten.forEach(d => {
+            drogenArten.forEach(
+                d => {
 
-                const el =
-                    document.getElementById(
-                        "drogen-" + d
-                    );
+                    const el =
+                        document.getElementById(
+                            "drogen-" + d
+                        );
 
-                if (el.checked) {
+                    if (el.checked) {
 
-                    text +=
-                        "- " +
-                        el.parentElement.textContent.trim() +
-                        "\n";
+                        text +=
+                            "- " +
+                            el.parentElement
+                                .textContent
+                                .trim() +
+                            "\n";
 
-                    any = true;
+                        any = true;
+                    }
                 }
-            });
+            );
 
             if (!any) {
+
                 text +=
                     "(Keine Substanzen ausgewählt)\n";
             }
@@ -469,8 +524,9 @@ function erstelleFormularText() {
 
         if (
             document
-                .getElementById("drogen-neg")
-                .checked
+                .getElementById(
+                    "drogen-neg"
+                ).checked
         ) {
 
             text +=
@@ -479,9 +535,9 @@ function erstelleFormularText() {
     }
 
 
-    /* -----------------------------------------------------
-       Weitere Fragen
-       ----------------------------------------------------- */
+    /* =====================================================
+       WEITERE FRAGEN
+       ===================================================== */
 
     const fragen = [
 
@@ -529,58 +585,57 @@ function erstelleFormularText() {
     ];
 
 
-    fragen.forEach(f => {
+    fragen.forEach(
+        f => {
 
-        const ja =
-            document
-                .getElementById(
+            const ja =
+                document.getElementById(
                     f.id + "-ja"
-                )
-                .checked;
+                ).checked;
 
-        const nein =
-            document
-                .getElementById(
+            const nein =
+                document.getElementById(
                     f.id + "-nein"
-                )
-                .checked;
+                ).checked;
 
-
-        text +=
-            f.text +
-            ": " +
-            (
-                ja
-                    ? "Ja"
-                    : (
-                        nein
-                            ? "Nein"
-                            : "Keine Angabe"
-                    )
-            ) +
-            "\n";
-
-
-        const extra =
-            document.getElementById(
-                f.id + "-textarea"
-            );
-
-
-        if (
-            ja &&
-            extra &&
-            extra.value.trim() !== ""
-        ) {
 
             text +=
-                "Details: " +
-                extra.value.trim() +
+                f.text +
+                ": " +
+                (
+                    ja
+                        ? "Ja"
+                        : (
+                            nein
+                                ? "Nein"
+                                : "Keine Angabe"
+                        )
+                ) +
                 "\n";
-        }
 
-        text += "\n";
-    });
+
+            const extra =
+                document.getElementById(
+                    f.id + "-textarea"
+                );
+
+
+            if (
+                ja &&
+                extra &&
+                extra.value.trim() !== ""
+            ) {
+
+                text +=
+                    "Details: " +
+                    extra.value.trim() +
+                    "\n";
+            }
+
+
+            text += "\n";
+        }
+    );
 
 
     return text;
@@ -588,193 +643,58 @@ function erstelleFormularText() {
 
 
 /* =========================================================
-   SICHERHEITSCODE PRÜFEN
+   DATEN VORBEREITEN UND ZU EMAIL.HTML
    ========================================================= */
 
-function sicherheitscodePruefen() {
+function emailSeiteOeffnen() {
 
-    const code =
-        document
-            .getElementById("sicherheitscode")
-            .value;
+    /*
+       Sicherheitsprüfung
+    */
 
-    const status =
-        document.getElementById(
-            "security-status"
+    if (
+        sessionStorage.getItem(
+            "v10_authenticated"
+        ) !== "true"
+    ) {
+
+        alert(
+            "Bitte zuerst das Passwort eingeben."
         );
 
-
-    if (!code || code.length < 6) {
-
-        status.textContent =
-            "Der Sicherheitscode muss mindestens 6 Zeichen enthalten.";
-
-        status.className =
-            "status error";
-
-        return false;
+        return;
     }
+
+
+    const text =
+        erstelleFormularText();
 
 
     /*
-       Der Code wird nur für diese Sitzung im Speicher
-       des Browsers verwendet.
+       Die Formulardaten werden in der Sitzung
+       zwischengespeichert.
+
+       Es wird NICHT die URL verwendet.
     */
 
     sessionStorage.setItem(
-        "v10_code",
-        code
+        "v10_formular_daten",
+        text
     );
 
 
-    status.textContent =
-        "Sicherheitscode akzeptiert.";
+    /*
+       Auf der E-Mail-Seite wird kein Passwort
+       mehr benötigt.
+    */
 
-    status.className =
-        "status success";
-
-
-    document
-        .getElementById("formular")
-        .classList.remove("locked");
-
-
-    return true;
+    window.location.href =
+        "email.html";
 }
 
 
 /* =========================================================
-   DATEN VERSCHLÜSSELN UND WEITER
-   ========================================================= */
-
-async function datenVerschluesselnUndWeiter() {
-
-    const button =
-        document.getElementById(
-            "hauptButton"
-        );
-
-
-    /* Wenn bereits verschlüsselt:
-       direkt zu email.html */
-
-    if (verschluesselteDatenVorhanden) {
-
-        window.location.href =
-            "email.html";
-
-        return;
-    }
-
-
-    const code =
-        document
-            .getElementById("sicherheitscode")
-            .value;
-
-
-    if (!code || code.length < 6) {
-
-        alert(
-            "Bitte zuerst einen gültigen Sicherheitscode eingeben."
-        );
-
-        return;
-    }
-
-
-    button.disabled = true;
-
-    button.textContent =
-        "Daten werden verschlüsselt...";
-
-
-    try {
-
-        const schluessel =
-            await erstelleSchluessel(code);
-
-
-        const formularText =
-            erstelleFormularText();
-
-
-        const verschluesselt =
-            await verschluesseln(
-                formularText,
-                schluessel
-            );
-
-
-        /*
-           Nur die verschlüsselten Daten werden in
-           sessionStorage abgelegt.
-        */
-
-        sessionStorage.setItem(
-            "v10_encrypted_data",
-            JSON.stringify(
-                verschluesselt
-            )
-        );
-
-
-        /*
-           Der Schlüssel wird für diese Browser-Sitzung
-           ebenfalls im Speicher gehalten.
-
-           Der Sicherheitscode muss auf email.html
-           deshalb nicht nochmals eingegeben werden.
-        */
-
-        sessionStorage.setItem(
-            "v10_session_code",
-            code
-        );
-
-
-        verschluesselteDatenVorhanden = true;
-
-
-        button.textContent =
-            "E-Mail senden";
-
-        button.className =
-            "btn-green";
-
-        button.disabled = false;
-
-
-        document.getElementById(
-            "security-status"
-        ).textContent =
-            "Daten wurden erfolgreich verschlüsselt. Klicke jetzt auf «E-Mail senden».";
-
-
-        document.getElementById(
-            "security-status"
-        ).className =
-            "status success";
-
-
-    } catch (error) {
-
-        console.error(error);
-
-        button.disabled = false;
-
-        button.textContent =
-            "Daten verschlüsseln und weiter";
-
-        alert(
-            "Fehler beim Verschlüsseln der Daten."
-        );
-    }
-}
-
-
-/* =========================================================
-   INITIALISIERUNG
+   SEITE LADEN
    ========================================================= */
 
 window.addEventListener(
@@ -782,20 +702,22 @@ window.addEventListener(
     function() {
 
         /*
-           Falls eine alte Sitzung vorhanden ist,
-           nicht automatisch übernehmen.
+           Alte Daten löschen, wenn index.html
+           neu gestartet wird.
         */
 
         sessionStorage.removeItem(
-            "v10_encrypted_data"
+            "v10_formular_daten"
         );
 
         sessionStorage.removeItem(
-            "v10_session_code"
+            "v10_authenticated"
         );
 
-        verschluesselteDatenVorhanden =
-            false;
+
+        document
+            .getElementById("passwort")
+            .focus();
     }
 );
 
@@ -805,45 +727,58 @@ window.addEventListener(
 
 <body>
 
-<h2>Kontrollformular – V10</h2>
+
+<h2>
+    Kontrollformular – V10
+</h2>
 
 
 <!-- =====================================================
-     SICHERHEITSCODE
+     PASSWORTBEREICH
      ===================================================== -->
 
-<div class="security-box">
+<div
+    id="login-bereich"
+    class="security-box"
+>
 
     <div class="security-title">
         Sicherheitsstufe V10
     </div>
 
-    <label for="sicherheitscode">
-        Sicherheitscode:
+
+    <label for="passwort">
+        Passwort:
     </label>
+
 
     <input
         type="password"
-        id="sicherheitscode"
+        id="passwort"
         autocomplete="off"
-        placeholder="Sicherheitscode eingeben"
+        placeholder="Passwort eingeben"
+        onkeydown="passwortEnter(event)"
     >
+
 
     <button
         type="button"
-        class="btn-normal"
-        onclick="sicherheitscodePruefen()"
+        class="btn-blue"
+        onclick="passwortPruefen()"
     >
-        Sicherheitscode bestätigen
+        Passwort bestätigen
     </button>
 
+
     <div
-        id="security-status"
+        id="password-status"
         class="status"
     ></div>
 
+
     <div class="info">
-        Der Sicherheitscode wird nicht in der URL übertragen.
+        Ohne korrektes Passwort kann das Formular
+        nicht geöffnet werden.
     </div>
 
 </div>
@@ -853,7 +788,10 @@ window.addEventListener(
      FORMULAR
      ===================================================== -->
 
-<div id="formular">
+<div
+    id="formular"
+    class="hidden"
+>
 
 
 <div class="section">
@@ -893,13 +831,11 @@ window.addEventListener(
 </div>
 
 
-<!-- =====================================================
-     ALKOHOL
-     ===================================================== -->
+<!-- ALKOHOL -->
 
 <button
     type="button"
-    class="btn-normal"
+    class="btn-blue"
     onclick="alkoholClicked()"
 >
     Alkohol
@@ -944,13 +880,11 @@ window.addEventListener(
 </div>
 
 
-<!-- =====================================================
-     DROGEN
-     ===================================================== -->
+<!-- DROGEN -->
 
 <button
     type="button"
-    class="btn-normal"
+    class="btn-blue"
     onclick="drogenClicked()"
 >
     Drogen
@@ -1055,9 +989,7 @@ window.addEventListener(
 </div>
 
 
-<!-- =====================================================
-     WEITERE FRAGEN
-     ===================================================== -->
+<!-- WEITERE FRAGEN -->
 
 <div class="section">
 
@@ -1065,8 +997,6 @@ window.addEventListener(
     Weitere Fragen
 </h3>
 
-
-<!-- Krankheit -->
 
 <div>
 
@@ -1076,23 +1006,21 @@ window.addEventListener(
 
 <div class="radio-group">
 
-    <input
-        type="radio"
-        name="krankheit"
-        id="krankheit-ja"
-        value="ja"
-        onchange="toggleTextfield('krankheit')"
-    >
-    Ja
+<input
+    type="radio"
+    name="krankheit"
+    id="krankheit-ja"
+    onchange="toggleTextfield('krankheit')"
+>
+Ja
 
-    <input
-        type="radio"
-        name="krankheit"
-        id="krankheit-nein"
-        value="nein"
-        onchange="toggleTextfield('krankheit')"
-    >
-    Nein
+<input
+    type="radio"
+    name="krankheit"
+    id="krankheit-nein"
+    onchange="toggleTextfield('krankheit')"
+>
+Nein
 
 </div>
 
@@ -1106,8 +1034,6 @@ window.addEventListener(
 </div>
 
 
-<!-- Ärztliche Behandlung -->
-
 <div>
 
 <label>
@@ -1116,23 +1042,21 @@ window.addEventListener(
 
 <div class="radio-group">
 
-    <input
-        type="radio"
-        name="aerztliche"
-        id="aerztliche-ja"
-        value="ja"
-        onchange="toggleTextfield('aerztliche')"
-    >
-    Ja
+<input
+    type="radio"
+    name="aerztliche"
+    id="aerztliche-ja"
+    onchange="toggleTextfield('aerztliche')"
+>
+Ja
 
-    <input
-        type="radio"
-        name="aerztliche"
-        id="aerztliche-nein"
-        value="nein"
-        onchange="toggleTextfield('aerztliche')"
-    >
-    Nein
+<input
+    type="radio"
+    name="aerztliche"
+    id="aerztliche-nein"
+    onchange="toggleTextfield('aerztliche')"
+>
+Nein
 
 </div>
 
@@ -1146,8 +1070,6 @@ window.addEventListener(
 </div>
 
 
-<!-- Medikamente -->
-
 <div>
 
 <label>
@@ -1156,23 +1078,21 @@ window.addEventListener(
 
 <div class="radio-group">
 
-    <input
-        type="radio"
-        name="medikamente"
-        id="medikamente-ja"
-        value="ja"
-        onchange="toggleTextfield('medikamente')"
-    >
-    Ja
+<input
+    type="radio"
+    name="medikamente"
+    id="medikamente-ja"
+    onchange="toggleTextfield('medikamente')"
+>
+Ja
 
-    <input
-        type="radio"
-        name="medikamente"
-        id="medikamente-nein"
-        value="nein"
-        onchange="toggleTextfield('medikamente')"
-    >
-    Nein
+<input
+    type="radio"
+    name="medikamente"
+    id="medikamente-nein"
+    onchange="toggleTextfield('medikamente')"
+>
+Nein
 
 </div>
 
@@ -1186,8 +1106,6 @@ window.addEventListener(
 </div>
 
 
-<!-- Weitere Personen -->
-
 <div>
 
 <label>
@@ -1196,23 +1114,21 @@ window.addEventListener(
 
 <div class="radio-group">
 
-    <input
-        type="radio"
-        name="weiterepersonen"
-        id="weiterepersonen-ja"
-        value="ja"
-        onchange="toggleTextfield('weiterepersonen')"
-    >
-    Ja
+<input
+    type="radio"
+    name="weiterepersonen"
+    id="weiterepersonen-ja"
+    onchange="toggleTextfield('weiterepersonen')"
+>
+Ja
 
-    <input
-        type="radio"
-        name="weiterepersonen"
-        id="weiterepersonen-nein"
-        value="nein"
-        onchange="toggleTextfield('weiterepersonen')"
-    >
-    Nein
+<input
+    type="radio"
+    name="weiterepersonen"
+    id="weiterepersonen-nein"
+    onchange="toggleTextfield('weiterepersonen')"
+>
+Nein
 
 </div>
 
@@ -1226,8 +1142,6 @@ window.addEventListener(
 </div>
 
 
-<!-- Personen in Obhut -->
-
 <div>
 
 <label>
@@ -1236,23 +1150,21 @@ window.addEventListener(
 
 <div class="radio-group">
 
-    <input
-        type="radio"
-        name="personen_notlage"
-        id="personen_notlage-ja"
-        value="ja"
-        onchange="toggleTextfield('personen_notlage')"
-    >
-    Ja
+<input
+    type="radio"
+    name="personen_notlage"
+    id="personen_notlage-ja"
+    onchange="toggleTextfield('personen_notlage')"
+>
+Ja
 
-    <input
-        type="radio"
-        name="personen_notlage"
-        id="personen_notlage-nein"
-        value="nein"
-        onchange="toggleTextfield('personen_notlage')"
-    >
-    Nein
+<input
+    type="radio"
+    name="personen_notlage"
+    id="personen_notlage-nein"
+    onchange="toggleTextfield('personen_notlage')"
+>
+Nein
 
 </div>
 
@@ -1266,8 +1178,6 @@ window.addEventListener(
 </div>
 
 
-<!-- Tiere -->
-
 <div>
 
 <label>
@@ -1276,23 +1186,21 @@ window.addEventListener(
 
 <div class="radio-group">
 
-    <input
-        type="radio"
-        name="tiere_notlage"
-        id="tiere_notlage-ja"
-        value="ja"
-        onchange="toggleTextfield('tiere_notlage')"
-    >
-    Ja
+<input
+    type="radio"
+    name="tiere_notlage"
+    id="tiere_notlage-ja"
+    onchange="toggleTextfield('tiere_notlage')"
+>
+Ja
 
-    <input
-        type="radio"
-        name="tiere_notlage"
-        id="tiere_notlage-nein"
-        value="nein"
-        onchange="toggleTextfield('tiere_notlage')"
-    >
-    Nein
+<input
+    type="radio"
+    name="tiere_notlage"
+    id="tiere_notlage-nein"
+    onchange="toggleTextfield('tiere_notlage')"
+>
+Nein
 
 </div>
 
@@ -1306,8 +1214,6 @@ window.addEventListener(
 </div>
 
 
-<!-- Dringendes -->
-
 <div>
 
 <label>
@@ -1316,23 +1222,21 @@ window.addEventListener(
 
 <div class="radio-group">
 
-    <input
-        type="radio"
-        name="dringend"
-        id="dringend-ja"
-        value="ja"
-        onchange="toggleTextfield('dringend')"
-    >
-    Ja
+<input
+    type="radio"
+    name="dringend"
+    id="dringend-ja"
+    onchange="toggleTextfield('dringend')"
+>
+Ja
 
-    <input
-        type="radio"
-        name="dringend"
-        id="dringend-nein"
-        value="nein"
-        onchange="toggleTextfield('dringend')"
-    >
-    Nein
+<input
+    type="radio"
+    name="dringend"
+    id="dringend-nein"
+    onchange="toggleTextfield('dringend')"
+>
+Nein
 
 </div>
 
@@ -1350,16 +1254,15 @@ window.addEventListener(
 
 
 <!-- =====================================================
-     HAUPTBUTTON
+     E-MAIL BUTTON
      ===================================================== -->
 
 <button
-    id="hauptButton"
     type="button"
     class="btn-green"
-    onclick="datenVerschluesselnUndWeiter()"
+    onclick="emailSeiteOeffnen()"
 >
-    Daten verschlüsseln und weiter
+    E-Mail senden
 </button>
 
 
