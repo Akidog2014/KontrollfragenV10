@@ -26,6 +26,19 @@ h2 {
     margin-bottom: 20px;
 }
 
+.security-box {
+    border: 2px solid #333;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+    background-color: #f5f5f5;
+}
+
+.security-title {
+    font-size: 18px;
+    font-weight: bold;
+}
+
 .status {
     padding: 12px;
     border-radius: 5px;
@@ -57,7 +70,7 @@ select {
 button {
     width: 100%;
     padding: 12px;
-    margin-top: 25px;
+    margin-top: 20px;
     font-size: 16px;
     cursor: pointer;
     border: none;
@@ -110,11 +123,40 @@ button {
 </h2>
 
 
+<!-- =====================================================
+     STATUS
+     ===================================================== -->
+
 <div
     id="status"
     class="status"
 >
     Formular wurde erfolgreich übernommen.
+</div>
+
+
+<!-- =====================================================
+     SICHERHEITSINFO
+     ===================================================== -->
+
+<div class="security-box">
+
+    <div class="security-title">
+        🔐 Sicherheitsstufe V10
+    </div>
+
+    <div class="info">
+
+        Die Anmeldung wurde bereits auf der
+        Formularseite durchgeführt.
+
+        <br><br>
+
+        Für die Empfängerauswahl ist keine
+        erneute Passworteingabe erforderlich.
+
+    </div>
+
 </div>
 
 
@@ -155,8 +197,13 @@ button {
 <strong>Hinweis:</strong><br>
 
 Marco Wüest wird automatisch als Empfänger
-hinzugefügt. Die anderen Empfänger können
-frei ausgewählt werden.
+hinzugefügt.
+
+Die anderen Empfänger können optional
+ausgewählt werden.
+
+Doppelte Empfänger werden automatisch
+entfernt.
 
 </div>
 
@@ -186,12 +233,16 @@ frei ausgewählt werden.
 </button>
 
 
+<!-- =====================================================
+     ABBRECHEN
+     ===================================================== -->
+
 <button
     type="button"
     class="btn-gray"
     onclick="abbrechen()"
 >
-    Abbrechen
+    Abbrechen und Sitzung sperren
 </button>
 
 
@@ -199,7 +250,18 @@ frei ausgewählt werden.
 
 
 /* =========================================================
-   EMPFÄNGERLISTE
+   SCHLÜSSEL
+   ========================================================= */
+
+const SESSION_KEY =
+    "v10_authenticated";
+
+const FORM_DATA_KEY =
+    "v10_formular_daten";
+
+
+/* =========================================================
+   EMPFÄNGER
    ========================================================= */
 
 const empfaengerListe = [
@@ -353,17 +415,83 @@ const empfaengerListe = [
 
 
 /* =========================================================
-   DROPDOWNS FÜLLEN
+   SITZUNG PRÜFEN
+   ========================================================= */
+
+function sitzungPruefen() {
+
+    const authentifiziert =
+        sessionStorage.getItem(
+            SESSION_KEY
+        );
+
+    const daten =
+        sessionStorage.getItem(
+            FORM_DATA_KEY
+        );
+
+
+    if (
+        authentifiziert !== "true" ||
+        !daten
+    ) {
+
+        document.getElementById(
+            "status"
+        ).textContent =
+            "Keine gültige Sitzung gefunden.";
+
+        document.getElementById(
+            "status"
+        ).classList.add(
+            "error"
+        );
+
+
+        document.querySelectorAll(
+            "select, button"
+        ).forEach(
+            element => {
+                element.disabled = true;
+            }
+        );
+
+
+        setTimeout(
+            function() {
+
+                window.location.href =
+                    "index.html";
+
+            },
+            1500
+        );
+
+
+        return false;
+    }
+
+
+    return true;
+}
+
+
+/* =========================================================
+   DROPDOWNS
    ========================================================= */
 
 function fuelleDropdown(id) {
 
     const select =
-        document.getElementById(id);
+        document.getElementById(
+            id
+        );
 
 
     const standard =
-        document.createElement("option");
+        document.createElement(
+            "option"
+        );
 
 
     standard.value = "";
@@ -397,20 +525,21 @@ function fuelleDropdown(id) {
             select.appendChild(
                 option
             );
+
         }
     );
 }
 
 
 /* =========================================================
-   DATEN LADEN
+   FORMULARDATEN LADEN
    ========================================================= */
 
 function ladeDaten() {
 
     const daten =
         sessionStorage.getItem(
-            "v10_formular_daten"
+            FORM_DATA_KEY
         );
 
 
@@ -423,34 +552,17 @@ function ladeDaten() {
     if (!daten) {
 
         preview.textContent =
-            "Es wurden keine Formulardaten gefunden.";
-
-        document
-            .getElementById("status")
-            .classList.add("error");
-
-        document
-            .getElementById("status")
-            .textContent =
             "Keine Formulardaten vorhanden.";
 
         return;
     }
 
 
-    /*
-       Daten nur zur Kontrolle anzeigen.
-    */
-
-    preview.textContent =
+    window.v10EmailText =
         daten;
 
 
-    /*
-       Für send() im Speicher verfügbar machen.
-    */
-
-    window.v10EmailText =
+    preview.textContent =
         daten;
 }
 
@@ -460,6 +572,11 @@ function ladeDaten() {
    ========================================================= */
 
 function senden() {
+
+    if (!sitzungPruefen()) {
+        return;
+    }
+
 
     const text =
         window.v10EmailText;
@@ -480,15 +597,18 @@ function senden() {
             "empfaenger1"
         ).value;
 
+
     const e2 =
         document.getElementById(
             "empfaenger2"
         ).value;
 
+
     const e3 =
         document.getElementById(
             "empfaenger3"
         ).value;
+
 
     const e4 =
         document.getElementById(
@@ -497,7 +617,7 @@ function senden() {
 
 
     /*
-       Marco immer hinzufügen.
+       Marco ist immer Empfänger.
     */
 
     let emails = [
@@ -544,12 +664,7 @@ function senden() {
 
 
     /*
-       Daten werden vor dem Öffnen des
-       Mailprogramms nicht in der URL der
-       Webseite übertragen.
-
-       mailto: wird vom Betriebssystem
-       an das Standard-Mailprogramm übergeben.
+       Mailprogramm öffnen.
     */
 
     window.location.href =
@@ -559,6 +674,28 @@ function senden() {
         subject +
         "&body=" +
         body;
+
+
+    /*
+       Die Sitzung wird NICHT sofort gelöscht,
+       damit das Mailprogramm die Daten noch
+       übernehmen kann.
+    */
+
+    setTimeout(
+        function() {
+
+            sessionStorage.removeItem(
+                FORM_DATA_KEY
+            );
+
+            sessionStorage.removeItem(
+                SESSION_KEY
+            );
+
+        },
+        5000
+    );
 }
 
 
@@ -568,26 +705,23 @@ function senden() {
 
 function abbrechen() {
 
-    if (
-        !confirm(
-            "Möchtest du den Vorgang wirklich abbrechen?"
-        )
-    ) {
+    const bestaetigung =
+        confirm(
+            "Möchten Sie den Vorgang wirklich abbrechen?\n\nDie Formulardaten werden gelöscht."
+        );
 
+
+    if (!bestaetigung) {
         return;
     }
 
 
-    /*
-       Sensible Daten aus der Sitzung löschen.
-    */
-
     sessionStorage.removeItem(
-        "v10_formular_daten"
+        FORM_DATA_KEY
     );
 
     sessionStorage.removeItem(
-        "v10_authenticated"
+        SESSION_KEY
     );
 
 
@@ -603,6 +737,22 @@ function abbrechen() {
 window.addEventListener(
     "DOMContentLoaded",
     function() {
+
+        /*
+           Zuerst Sitzung prüfen.
+        */
+
+        if (
+            !sitzungPruefen()
+        ) {
+
+            return;
+        }
+
+
+        /*
+           Empfänger laden.
+        */
 
         fuelleDropdown(
             "empfaenger1"
@@ -621,11 +771,17 @@ window.addEventListener(
         );
 
 
+        /*
+           Formulardaten laden.
+        */
+
         ladeDaten();
+
     }
 );
 
 </script>
+
 
 </body>
 
