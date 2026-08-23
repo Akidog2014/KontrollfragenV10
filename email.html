@@ -1,0 +1,1229 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+
+<meta charset="UTF-8">
+
+<meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+>
+
+<title>Empfänger wählen – V10</title>
+
+
+<style>
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+
+    font-family: Arial, sans-serif;
+
+    padding: 20px;
+
+    margin: 0;
+
+    background: #f4f4f4;
+
+    color: #222;
+
+}
+
+.container {
+
+    max-width: 600px;
+
+    margin: auto;
+
+    background: white;
+
+    padding: 20px;
+
+    border-radius: 10px;
+
+    box-shadow:
+        0 2px 10px rgba(0,0,0,.15);
+
+}
+
+.security {
+
+    background: #111;
+
+    color: white;
+
+    padding: 12px;
+
+    border-radius: 6px;
+
+    text-align: center;
+
+    font-weight: bold;
+
+    margin-bottom: 20px;
+
+}
+
+label {
+
+    display: block;
+
+    margin-top: 15px;
+
+    font-weight: bold;
+
+}
+
+select {
+
+    width: 100%;
+
+    padding: 10px;
+
+    margin-top: 5px;
+
+    font-size: 16px;
+
+    border: 1px solid #aaa;
+
+    border-radius: 5px;
+
+}
+
+button {
+
+    width: 100%;
+
+    padding: 12px;
+
+    margin-top: 20px;
+
+    font-size: 16px;
+
+    border: none;
+
+    border-radius: 5px;
+
+    cursor: pointer;
+
+}
+
+.btn-green {
+
+    background: #198754;
+
+    color: white;
+
+}
+
+.btn-red {
+
+    background: #b02a37;
+
+    color: white;
+
+}
+
+.warning {
+
+    background: #fff3cd;
+
+    border: 1px solid #ffe69c;
+
+    padding: 12px;
+
+    border-radius: 5px;
+
+    margin-bottom: 20px;
+
+}
+
+.error {
+
+    background: #f8d7da;
+
+    color: #842029;
+
+    padding: 10px;
+
+    border-radius: 5px;
+
+    margin-bottom: 15px;
+
+}
+
+.hidden {
+
+    display: none;
+
+}
+
+.status {
+
+    text-align: center;
+
+    font-size: 13px;
+
+    color: #666;
+
+    margin-top: 10px;
+
+}
+
+</style>
+
+</head>
+
+
+<body>
+
+
+<div class="container">
+
+
+<div class="security">
+
+🔐 KONTROLLFORMULAR – V10
+
+</div>
+
+
+<div id="loginBox">
+
+<h2>Daten entsperren</h2>
+
+
+<div class="warning">
+
+Die Formulardaten wurden verschlüsselt gespeichert.
+
+Zur Entschlüsselung ist die V10-PIN erforderlich.
+
+</div>
+
+
+<div
+    id="error"
+    class="error hidden"
+></div>
+
+
+<label for="pin">
+
+V10-PIN:
+
+</label>
+
+
+<input
+    type="password"
+    id="pin"
+    inputmode="numeric"
+    autocomplete="off"
+    maxlength="32"
+    style="
+        width:100%;
+        padding:10px;
+        margin-top:5px;
+        font-size:16px;
+    "
+>
+
+
+<button
+    class="btn-green"
+    onclick="datenEntsperren()"
+>
+
+🔓 Daten entschlüsseln
+
+</button>
+
+
+</div>
+
+
+<div
+    id="empfaengerBox"
+    class="hidden"
+>
+
+
+<h2>Empfänger auswählen</h2>
+
+
+<div class="warning">
+
+Marco Wüest wird automatisch als Empfänger hinzugefügt.
+
+Sie können bis zu vier weitere Empfänger auswählen.
+
+</div>
+
+
+<label for="empfaenger1">
+
+Empfänger 1:
+
+</label>
+
+<select id="empfaenger1"></select>
+
+
+<label for="empfaenger2">
+
+Empfänger 2:
+
+</label>
+
+<select id="empfaenger2"></select>
+
+
+<label for="empfaenger3">
+
+Empfänger 3:
+
+</label>
+
+<select id="empfaenger3"></select>
+
+
+<label for="empfaenger4">
+
+Empfänger 4:
+
+</label>
+
+<select id="empfaenger4"></select>
+
+
+<button
+    class="btn-green"
+    onclick="senden()"
+>
+
+📧 E-Mail vorbereiten
+
+</button>
+
+
+<button
+    class="btn-red"
+    onclick="datenLoeschen()"
+>
+
+🔒 Daten löschen
+
+</button>
+
+
+<div class="status">
+
+Die verschlüsselten Sitzungsdaten werden nach dem Versand gelöscht.
+
+</div>
+
+
+</div>
+
+
+</div>
+
+
+<script>
+
+/* =========================================================
+   EMPFÄNGER
+   ========================================================= */
+
+const empfaengerListe = [
+
+    {
+        name: "Wüest Marco",
+        email: "marco.wueest@lu.ch"
+    },
+
+    {
+        name: "Hufschmid Christof",
+        email: "christof.hufschmid@lu.ch"
+    },
+
+    {
+        name: "Ulrich Marcel",
+        email: "marcel.ulrich@lu.ch"
+    },
+
+    {
+        name: "Kneubühler Flavio",
+        email: "flavio.kneubuehler@lu.ch"
+    },
+
+    {
+        name: "Marthaler Lisa",
+        email: "lisa.marthaler@lu.ch"
+    },
+
+    {
+        name: "Heggli Ernest",
+        email: "ernest.heggli@lu.ch"
+    },
+
+    {
+        name: "Milli Gabriele",
+        email: "gabriele.milli@lu.ch"
+    },
+
+    {
+        name: "Harnisch Sebastian",
+        email: "sebastian.harnisch@lu.ch"
+    },
+
+    {
+        name: "Niederberger Naja",
+        email: "naja.niederberger@lu.ch"
+    },
+
+    {
+        name: "Grüter Sara",
+        email: "sara.grueter@lu.ch"
+    },
+
+    {
+        name: "Waldvogel Rahel",
+        email: "rahel.waldvogel@lu.ch"
+    },
+
+    {
+        name: "Boscardin Timon",
+        email: "timon.boscardin@lu.ch"
+    },
+
+    {
+        name: "Eichhorn Michael",
+        email: "michael.eichhorn@lu.ch"
+    },
+
+    {
+        name: "Holdener Roman",
+        email: "roman.holdener@lu.ch"
+    },
+
+    {
+        name: "Iseni Lorena",
+        email: "lorena.iseni@lu.ch"
+    },
+
+    {
+        name: "Barmet Patrick",
+        email: "patrick.barmet@lu.ch"
+    },
+
+    {
+        name: "Wechsler Luca",
+        email: "luca.wechsler@lu.ch"
+    },
+
+    {
+        name: "Odermatt Michael",
+        email: "michael.odermatt@lu.ch"
+    },
+
+    {
+        name: "Sidler Nicholas",
+        email: "nicholas.sidler@lu.ch"
+    },
+
+    {
+        name: "Gisler Fabienne",
+        email: "fabienne.gisler@lu.ch"
+    },
+
+    {
+        name: "Csernay Martina",
+        email: "martina.csernay@lu.ch"
+    },
+
+    {
+        name: "Rutschmann Benjamin",
+        email: "benjamin.rutschmann@lu.ch"
+    },
+
+    {
+        name: "Gisler Raffaele",
+        email: "raffaele.gisler@lu.ch"
+    },
+
+    {
+        name: "Kaufmann Noah",
+        email: "noah.kaufmann@lu.ch"
+    },
+
+    {
+        name: "Gioia Giuseppe",
+        email: "giuseppe.gioia@lu.ch"
+    },
+
+    {
+        name: "Schacher Martin",
+        email: "martin.schacher@lu.ch"
+    },
+
+    {
+        name: "Lustenberger Kurt",
+        email: "kurt.lustenberger@lu.ch"
+    },
+
+    {
+        name: "Steinger Philipp",
+        email: "philipp.steinger@lu.ch"
+    },
+
+    {
+        name: "Bigler Samuel",
+        email: "samuel.bigler@lu.ch"
+    }
+
+];
+
+
+/* =========================================================
+   BASE64
+   ========================================================= */
+
+function base64ToBytes(base64) {
+
+    const binary = atob(base64);
+
+    const bytes =
+        new Uint8Array(binary.length);
+
+    for(
+        let i = 0;
+        i < binary.length;
+        i++
+    ) {
+
+        bytes[i] =
+            binary.charCodeAt(i);
+
+    }
+
+    return bytes;
+
+}
+
+
+/* =========================================================
+   AES KEY AUS PIN
+   ========================================================= */
+
+async function schluesselAusPIN(
+    pin,
+    salt
+) {
+
+    const encoder =
+        new TextEncoder();
+
+
+    const material =
+        await crypto.subtle.importKey(
+
+            "raw",
+
+            encoder.encode(pin),
+
+            "PBKDF2",
+
+            false,
+
+            ["deriveKey"]
+
+        );
+
+
+    return crypto.subtle.deriveKey(
+
+        {
+
+            name: "PBKDF2",
+
+            salt: salt,
+
+            iterations: 250000,
+
+            hash: "SHA-256"
+
+        },
+
+        material,
+
+        {
+
+            name: "AES-GCM",
+
+            length: 256
+
+        },
+
+        false,
+
+        ["decrypt"]
+
+    );
+
+}
+
+
+/* =========================================================
+   DATEN ENTSCHLÜSSELN
+   ========================================================= */
+
+async function entschluesseln(
+    verschluesselt,
+    pin
+) {
+
+    const salt =
+        base64ToBytes(
+            verschluesselt.salt
+        );
+
+    const iv =
+        base64ToBytes(
+            verschluesselt.iv
+        );
+
+    const daten =
+        base64ToBytes(
+            verschluesselt.data
+        );
+
+
+    const key =
+        await schluesselAusPIN(
+            pin,
+            salt
+        );
+
+
+    const entschluesselt =
+        await crypto.subtle.decrypt(
+
+            {
+                name: "AES-GCM",
+                iv: iv
+            },
+
+            key,
+
+            daten
+
+        );
+
+
+    const decoder =
+        new TextDecoder();
+
+
+    return JSON.parse(
+        decoder.decode(
+            entschluesselt
+        )
+    );
+
+}
+
+
+/* =========================================================
+   DATEN LADEN
+   ========================================================= */
+
+let formularDaten = null;
+
+
+async function datenEntsperren() {
+
+    const error =
+        document.getElementById("error");
+
+    error.classList.add("hidden");
+
+
+    const pin =
+        document
+            .getElementById("pin")
+            .value
+            .trim();
+
+
+    if(!pin) {
+
+        error.textContent =
+            "Bitte V10-PIN eingeben.";
+
+        error.classList.remove("hidden");
+
+        return;
+
+    }
+
+
+    const gespeicherteDaten =
+        sessionStorage.getItem(
+            "v10_formular"
+        );
+
+
+    if(!gespeicherteDaten) {
+
+        error.textContent =
+            "Keine gültigen Sitzungsdaten gefunden.";
+
+        error.classList.remove("hidden");
+
+        return;
+
+    }
+
+
+    try {
+
+        const verschluesselt =
+            JSON.parse(
+                gespeicherteDaten
+            );
+
+
+        formularDaten =
+            await entschluesseln(
+                verschluesselt,
+                pin
+            );
+
+
+        document
+            .getElementById("loginBox")
+            .classList.add("hidden");
+
+
+        document
+            .getElementById("empfaengerBox")
+            .classList.remove("hidden");
+
+
+        fuelleAlleDropdowns();
+
+
+        document
+            .getElementById("pin")
+            .value = "";
+
+    }
+    catch(errorObject) {
+
+        console.error(errorObject);
+
+        error.textContent =
+            "Entschlüsselung fehlgeschlagen. Die PIN ist vermutlich falsch.";
+
+        error.classList.remove("hidden");
+
+        document
+            .getElementById("pin")
+            .value = "";
+
+    }
+
+}
+
+
+/* =========================================================
+   DROPDOWNS
+   ========================================================= */
+
+function fuelleDropdown(id) {
+
+    const select =
+        document.getElementById(id);
+
+
+    const standard =
+        document.createElement("option");
+
+    standard.value = "";
+
+    standard.textContent =
+        "-- Optional --";
+
+    select.appendChild(
+        standard
+    );
+
+
+    empfaengerListe.forEach(
+        person => {
+
+            const option =
+                document.createElement(
+                    "option"
+                );
+
+            option.value =
+                person.email;
+
+            option.textContent =
+                person.name;
+
+            select.appendChild(
+                option
+            );
+
+        }
+    );
+
+
+    select.addEventListener(
+        "change",
+        pruefeDoppelteEmpfaenger
+    );
+
+}
+
+
+function fuelleAlleDropdowns() {
+
+    [
+        "empfaenger1",
+        "empfaenger2",
+        "empfaenger3",
+        "empfaenger4"
+
+    ].forEach(fuelleDropdown);
+
+}
+
+
+/* =========================================================
+   DOPPELTE EMPFÄNGER VERHINDERN
+   ========================================================= */
+
+function pruefeDoppelteEmpfaenger() {
+
+    const selects = [
+
+        document.getElementById(
+            "empfaenger1"
+        ),
+
+        document.getElementById(
+            "empfaenger2"
+        ),
+
+        document.getElementById(
+            "empfaenger3"
+        ),
+
+        document.getElementById(
+            "empfaenger4"
+        )
+
+    ];
+
+
+    const werte = [];
+
+
+    selects.forEach(
+        select => {
+
+            if(select.value) {
+
+                if(
+                    werte.includes(
+                        select.value
+                    )
+                ) {
+
+                    alert(
+                        "Dieser Empfänger wurde bereits ausgewählt."
+                    );
+
+                    select.value = "";
+
+                }
+                else {
+
+                    werte.push(
+                        select.value
+                    );
+
+                }
+
+            }
+
+        }
+    );
+
+}
+
+
+/* =========================================================
+   MAILTEXT ERSTELLEN
+   ========================================================= */
+
+function mailTextErstellen() {
+
+    const d =
+        formularDaten;
+
+
+    let text =
+        "Info Festnahme\n\n";
+
+
+    text +=
+        "Name: " +
+        d.person.nachname +
+        "\n";
+
+    text +=
+        "Vorname: " +
+        d.person.vorname +
+        "\n";
+
+    text +=
+        "Geburtsdatum: " +
+        d.person.geburtsdatum +
+        "\n\n";
+
+
+    /* Alkohol */
+
+    if(d.alkohol) {
+
+        text +=
+            "Alkoholkontrolle:\n";
+
+        text +=
+            "Datum: " +
+            d.alkohol.datum +
+            "\n";
+
+        text +=
+            "Zeit: " +
+            d.alkohol.zeit +
+            "\n";
+
+        text +=
+            "Wert: " +
+            d.alkohol.wert +
+            "\n\n";
+
+    }
+
+
+    /* Drogen */
+
+    if(d.drogen) {
+
+        text +=
+            "Drogenkontrolle:\n";
+
+        text +=
+            "Datum: " +
+            d.drogen.datum +
+            "\n";
+
+        text +=
+            "Zeit: " +
+            d.drogen.zeit +
+            "\n";
+
+        text +=
+            "Resultat: " +
+            d.drogen.resultat +
+            "\n";
+
+
+        if(
+            d.drogen.substanzen.length
+        ) {
+
+            text +=
+                "Substanzen:\n";
+
+
+            d.drogen.substanzen.forEach(
+                substanz => {
+
+                    text +=
+                        "- " +
+                        substanz +
+                        "\n";
+
+                }
+            );
+
+        }
+
+
+        text += "\n";
+
+    }
+
+
+    /* Weitere Fragen */
+
+    Object.values(
+        d.fragen
+    ).forEach(
+        frage => {
+
+            text +=
+                frage.frage +
+                ": " +
+                frage.antwort +
+                "\n";
+
+
+            if(
+                frage.antwort === "Ja" &&
+                frage.details
+            ) {
+
+                text +=
+                    "Details: " +
+                    frage.details +
+                    "\n";
+
+            }
+
+
+            text += "\n";
+
+        }
+    );
+
+
+    return text;
+
+}
+
+
+/* =========================================================
+   MAIL SENDEN
+   ========================================================= */
+
+function senden() {
+
+    if(!formularDaten) {
+
+        alert(
+            "Keine entschlüsselten Daten vorhanden."
+        );
+
+        return;
+
+    }
+
+
+    const selects = [
+
+        document.getElementById(
+            "empfaenger1"
+        ),
+
+        document.getElementById(
+            "empfaenger2"
+        ),
+
+        document.getElementById(
+            "empfaenger3"
+        ),
+
+        document.getElementById(
+            "empfaenger4"
+        )
+
+    ];
+
+
+    const emails = [];
+
+
+    /*
+       Marco immer hinzufügen
+    */
+
+    const marco =
+        "marco.wueest@lu.ch";
+
+
+    emails.push(marco);
+
+
+    selects.forEach(
+        select => {
+
+            if(
+                select.value &&
+                !emails.includes(
+                    select.value
+                )
+            ) {
+
+                emails.push(
+                    select.value
+                );
+
+            }
+
+        }
+    );
+
+
+    const empfaengerString =
+        emails.join(";");
+
+
+    const text =
+        mailTextErstellen();
+
+
+    const bestaetigung = confirm(
+
+        "E-Mail vorbereiten?\n\n" +
+
+        "Empfänger:\n" +
+
+        emails.join("\n") +
+
+        "\n\n" +
+
+        "ACHTUNG:\n" +
+
+        "Die E-Mail enthält personenbezogene " +
+        "und möglicherweise besonders schützenswerte Daten.\n\n" +
+
+        "Nur fortfahren, wenn die Empfänger korrekt sind."
+
+    );
+
+
+    if(!bestaetigung) {
+
+        return;
+
+    }
+
+
+    /*
+       Daten vor dem Öffnen des Mailclients löschen.
+
+       Achtung:
+       Sobald mailto geöffnet wird, übernimmt der
+       lokale Mailclient die Daten.
+    */
+
+    sessionStorage.removeItem(
+        "v10_formular"
+    );
+
+
+    const mailto =
+        "mailto:" +
+        empfaengerString +
+
+        "?subject=" +
+        encodeURIComponent(
+            "Info Festnahme"
+        ) +
+
+        "&body=" +
+        encodeURIComponent(
+            text
+        );
+
+
+    window.location.href =
+        mailto;
+
+}
+
+
+/* =========================================================
+   DATEN LÖSCHEN
+   ========================================================= */
+
+function datenLoeschen() {
+
+    const bestaetigung =
+        confirm(
+
+            "Sollen die verschlüsselten " +
+            "Sitzungsdaten unwiderruflich " +
+            "aus dieser Browser-Sitzung gelöscht werden?"
+
+        );
+
+
+    if(!bestaetigung) {
+
+        return;
+
+    }
+
+
+    sessionStorage.removeItem(
+        "v10_formular"
+    );
+
+
+    formularDaten = null;
+
+
+    document
+        .getElementById("empfaengerBox")
+        .classList.add("hidden");
+
+
+    document
+        .getElementById("loginBox")
+        .classList.remove("hidden");
+
+
+    alert(
+        "Die Sitzungsdaten wurden gelöscht."
+    );
+
+}
+
+
+/* =========================================================
+   ENTER-TASTE
+   ========================================================= */
+
+document
+    .getElementById("pin")
+    .addEventListener(
+        "keydown",
+        function(event) {
+
+            if(event.key === "Enter") {
+
+                datenEntsperren();
+
+            }
+
+        }
+    );
+
+
+</script>
+
+</body>
+</html>
