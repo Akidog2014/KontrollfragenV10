@@ -22,9 +22,9 @@ body {
 
     font-family: Arial, sans-serif;
 
-    padding: 20px;
-
     margin: 0;
+
+    padding: 20px;
 
     background: #f4f4f4;
 
@@ -67,6 +67,12 @@ body {
 
 }
 
+h2 {
+
+    margin-top: 0;
+
+}
+
 label {
 
     display: block;
@@ -77,6 +83,7 @@ label {
 
 }
 
+input,
 select {
 
     width: 100%;
@@ -90,6 +97,14 @@ select {
     border: 1px solid #aaa;
 
     border-radius: 5px;
+
+}
+
+.pin-input {
+
+    text-align: center;
+
+    letter-spacing: 4px;
 
 }
 
@@ -141,6 +156,20 @@ button {
 
 }
 
+.info {
+
+    background: #cff4fc;
+
+    color: #055160;
+
+    padding: 10px;
+
+    border-radius: 5px;
+
+    margin-bottom: 15px;
+
+}
+
 .error {
 
     background: #f8d7da;
@@ -155,9 +184,23 @@ button {
 
 }
 
+.success {
+
+    background: #d1e7dd;
+
+    color: #0f5132;
+
+    padding: 10px;
+
+    border-radius: 5px;
+
+    margin-bottom: 15px;
+
+}
+
 .hidden {
 
-    display: none;
+    display: none !important;
 
 }
 
@@ -191,29 +234,27 @@ button {
 </div>
 
 
+<!-- =====================================================
+     LOGIN
+     ===================================================== -->
+
 <div id="loginBox">
 
-<h2>Daten entsperren</h2>
+<h2>Daten entschlüsseln</h2>
 
 
 <div class="warning">
 
 Die Formulardaten wurden verschlüsselt gespeichert.
 
-Zur Entschlüsselung ist die V10-PIN erforderlich.
+Bitte geben Sie Ihren V10-Code ein, um die Daten zu entschlüsseln.
 
 </div>
 
 
-<div
-    id="error"
-    class="error hidden"
-></div>
-
-
 <label for="pin">
 
-V10-PIN:
+V10-Code:
 
 </label>
 
@@ -221,15 +262,10 @@ V10-PIN:
 <input
     type="password"
     id="pin"
-    inputmode="numeric"
-    autocomplete="off"
-    maxlength="32"
-    style="
-        width:100%;
-        padding:10px;
-        margin-top:5px;
-        font-size:16px;
-    "
+    class="pin-input"
+    autocomplete="current-password"
+    maxlength="64"
+    placeholder="Code eingeben"
 >
 
 
@@ -243,8 +279,17 @@ V10-PIN:
 </button>
 
 
+<div
+    id="error"
+    class="error hidden"
+></div>
+
 </div>
 
+
+<!-- =====================================================
+     EMPFÄNGER
+     ===================================================== -->
 
 <div
     id="empfaengerBox"
@@ -252,7 +297,18 @@ V10-PIN:
 >
 
 
-<h2>Empfänger auswählen</h2>
+<div class="success">
+
+🔓 Daten erfolgreich entschlüsselt
+
+</div>
+
+
+<h2>
+
+Empfänger auswählen
+
+</h2>
 
 
 <div class="warning">
@@ -322,7 +378,7 @@ Empfänger 4:
 
 <div class="status">
 
-Die verschlüsselten Sitzungsdaten werden nach dem Versand gelöscht.
+Die verschlüsselten Sitzungsdaten werden nach Abschluss gelöscht.
 
 </div>
 
@@ -334,6 +390,14 @@ Die verschlüsselten Sitzungsdaten werden nach dem Versand gelöscht.
 
 
 <script>
+
+/* =========================================================
+   KONFIGURATION
+   ========================================================= */
+
+const PBKDF2_ITERATIONS =
+    250000;
+
 
 /* =========================================================
    EMPFÄNGER
@@ -495,10 +559,14 @@ const empfaengerListe = [
 
 function base64ToBytes(base64) {
 
-    const binary = atob(base64);
+    const binary =
+        atob(base64);
 
     const bytes =
-        new Uint8Array(binary.length);
+        new Uint8Array(
+            binary.length
+        );
+
 
     for(
         let i = 0;
@@ -511,17 +579,18 @@ function base64ToBytes(base64) {
 
     }
 
+
     return bytes;
 
 }
 
 
 /* =========================================================
-   AES KEY AUS PIN
+   AES KEY AUS CODE
    ========================================================= */
 
-async function schluesselAusPIN(
-    pin,
+async function schluesselAusCode(
+    code,
     salt
 ) {
 
@@ -534,7 +603,7 @@ async function schluesselAusPIN(
 
             "raw",
 
-            encoder.encode(pin),
+            encoder.encode(code),
 
             "PBKDF2",
 
@@ -553,7 +622,8 @@ async function schluesselAusPIN(
 
             salt: salt,
 
-            iterations: 250000,
+            iterations:
+                PBKDF2_ITERATIONS,
 
             hash: "SHA-256"
 
@@ -579,12 +649,12 @@ async function schluesselAusPIN(
 
 
 /* =========================================================
-   DATEN ENTSCHLÜSSELN
+   ENTSCHLÜSSELN
    ========================================================= */
 
 async function entschluesseln(
     verschluesselt,
-    pin
+    code
 ) {
 
     const salt =
@@ -592,10 +662,12 @@ async function entschluesseln(
             verschluesselt.salt
         );
 
+
     const iv =
         base64ToBytes(
             verschluesselt.iv
         );
+
 
     const daten =
         base64ToBytes(
@@ -604,18 +676,21 @@ async function entschluesseln(
 
 
     const key =
-        await schluesselAusPIN(
-            pin,
+        await schluesselAusCode(
+            code,
             salt
         );
 
 
-    const entschluesselt =
+    const entschluesselteDaten =
         await crypto.subtle.decrypt(
 
             {
+
                 name: "AES-GCM",
+
                 iv: iv
+
             },
 
             key,
@@ -630,42 +705,56 @@ async function entschluesseln(
 
 
     return JSON.parse(
+
         decoder.decode(
-            entschluesselt
+            entschluesselteDaten
         )
+
     );
 
 }
 
 
 /* =========================================================
-   DATEN LADEN
+   GLOBALE DATEN
    ========================================================= */
 
 let formularDaten = null;
 
 
+/* =========================================================
+   DATEN ENTSPERREN
+   ========================================================= */
+
 async function datenEntsperren() {
 
     const error =
-        document.getElementById("error");
+        document.getElementById(
+            "error"
+        );
 
-    error.classList.add("hidden");
+
+    error.classList.add(
+        "hidden"
+    );
 
 
-    const pin =
+    const code =
         document
-            .getElementById("pin")
-            .value
-            .trim();
+            .getElementById(
+                "pin"
+            )
+            .value;
 
 
-    if(!pin) {
+    if(!code) {
 
         error.textContent =
-            "Bitte V10-PIN eingeben.";
+            "Bitte V10-Code eingeben.";
 
-        error.classList.remove("hidden");
+        error.classList.remove(
+            "hidden"
+        );
 
         return;
 
@@ -681,9 +770,11 @@ async function datenEntsperren() {
     if(!gespeicherteDaten) {
 
         error.textContent =
-            "Keine gültigen Sitzungsdaten gefunden.";
+            "Keine Formulardaten vorhanden oder die Sitzung ist abgelaufen.";
 
-        error.classList.remove("hidden");
+        error.classList.remove(
+            "hidden"
+        );
 
         return;
 
@@ -701,40 +792,62 @@ async function datenEntsperren() {
         formularDaten =
             await entschluesseln(
                 verschluesselt,
-                pin
+                code
+            );
+
+
+        /*
+         * Code sofort aus dem Eingabefeld entfernen.
+         */
+
+        document
+            .getElementById(
+                "pin"
+            )
+            .value = "";
+
+
+        document
+            .getElementById(
+                "loginBox"
+            )
+            .classList.add(
+                "hidden"
             );
 
 
         document
-            .getElementById("loginBox")
-            .classList.add("hidden");
-
-
-        document
-            .getElementById("empfaengerBox")
-            .classList.remove("hidden");
+            .getElementById(
+                "empfaengerBox"
+            )
+            .classList.remove(
+                "hidden"
+            );
 
 
         fuelleAlleDropdowns();
 
-
-        document
-            .getElementById("pin")
-            .value = "";
-
     }
     catch(errorObject) {
 
-        console.error(errorObject);
+        console.error(
+            errorObject
+        );
 
-        error.textContent =
-            "Entschlüsselung fehlgeschlagen. Die PIN ist vermutlich falsch.";
-
-        error.classList.remove("hidden");
 
         document
-            .getElementById("pin")
+            .getElementById(
+                "pin"
+            )
             .value = "";
+
+
+        error.textContent =
+            "Der V10-Code ist falsch oder die Daten sind beschädigt.";
+
+        error.classList.remove(
+            "hidden"
+        );
 
     }
 
@@ -748,16 +861,22 @@ async function datenEntsperren() {
 function fuelleDropdown(id) {
 
     const select =
-        document.getElementById(id);
+        document.getElementById(
+            id
+        );
 
 
     const standard =
-        document.createElement("option");
+        document.createElement(
+            "option"
+        );
+
 
     standard.value = "";
 
     standard.textContent =
         "-- Optional --";
+
 
     select.appendChild(
         standard
@@ -772,11 +891,14 @@ function fuelleDropdown(id) {
                     "option"
                 );
 
+
             option.value =
                 person.email;
 
+
             option.textContent =
                 person.name;
+
 
             select.appendChild(
                 option
@@ -802,13 +924,15 @@ function fuelleAlleDropdowns() {
         "empfaenger3",
         "empfaenger4"
 
-    ].forEach(fuelleDropdown);
+    ].forEach(
+        fuelleDropdown
+    );
 
 }
 
 
 /* =========================================================
-   DOPPELTE EMPFÄNGER VERHINDERN
+   DOPPELTE EMPFÄNGER
    ========================================================= */
 
 function pruefeDoppelteEmpfaenger() {
@@ -834,34 +958,40 @@ function pruefeDoppelteEmpfaenger() {
     ];
 
 
-    const werte = [];
+    const gesehen =
+        new Set();
 
 
     selects.forEach(
         select => {
 
-            if(select.value) {
+            if(!select.value) {
 
-                if(
-                    werte.includes(
-                        select.value
-                    )
-                ) {
+                return;
 
-                    alert(
-                        "Dieser Empfänger wurde bereits ausgewählt."
-                    );
+            }
 
-                    select.value = "";
 
-                }
-                else {
+            if(
+                gesehen.has(
+                    select.value
+                )
+            ) {
 
-                    werte.push(
-                        select.value
-                    );
+                alert(
+                    "Dieser Empfänger wurde bereits ausgewählt."
+                );
 
-                }
+
+                select.value = "";
+
+
+            }
+            else {
+
+                gesehen.add(
+                    select.value
+                );
 
             }
 
@@ -872,7 +1002,7 @@ function pruefeDoppelteEmpfaenger() {
 
 
 /* =========================================================
-   MAILTEXT ERSTELLEN
+   MAILTEXT
    ========================================================= */
 
 function mailTextErstellen() {
@@ -890,10 +1020,12 @@ function mailTextErstellen() {
         d.person.nachname +
         "\n";
 
+
     text +=
         "Vorname: " +
         d.person.vorname +
         "\n";
+
 
     text +=
         "Geburtsdatum: " +
@@ -908,15 +1040,18 @@ function mailTextErstellen() {
         text +=
             "Alkoholkontrolle:\n";
 
+
         text +=
             "Datum: " +
             d.alkohol.datum +
             "\n";
 
+
         text +=
             "Zeit: " +
             d.alkohol.zeit +
             "\n";
+
 
         text +=
             "Wert: " +
@@ -933,15 +1068,18 @@ function mailTextErstellen() {
         text +=
             "Drogenkontrolle:\n";
 
+
         text +=
             "Datum: " +
             d.drogen.datum +
             "\n";
 
+
         text +=
             "Zeit: " +
             d.drogen.zeit +
             "\n";
+
 
         text +=
             "Resultat: " +
@@ -950,7 +1088,7 @@ function mailTextErstellen() {
 
 
         if(
-            d.drogen.substanzen.length
+            d.drogen.substanzen.length > 0
         ) {
 
             text +=
@@ -976,7 +1114,7 @@ function mailTextErstellen() {
     }
 
 
-    /* Weitere Fragen */
+    /* Fragen */
 
     Object.values(
         d.fragen
@@ -1023,7 +1161,7 @@ function senden() {
     if(!formularDaten) {
 
         alert(
-            "Keine entschlüsselten Daten vorhanden."
+            "Keine gültigen Formulardaten vorhanden."
         );
 
         return;
@@ -1056,14 +1194,16 @@ function senden() {
 
 
     /*
-       Marco immer hinzufügen
-    */
+     * Marco immer hinzufügen.
+     */
 
     const marco =
         "marco.wueest@lu.ch";
 
 
-    emails.push(marco);
+    emails.push(
+        marco
+    );
 
 
     selects.forEach(
@@ -1086,32 +1226,29 @@ function senden() {
     );
 
 
-    const empfaengerString =
-        emails.join(";");
-
-
     const text =
         mailTextErstellen();
 
 
-    const bestaetigung = confirm(
+    const bestaetigung =
+        confirm(
 
-        "E-Mail vorbereiten?\n\n" +
+            "E-Mail vorbereiten?\n\n" +
 
-        "Empfänger:\n" +
+            "Empfänger:\n" +
 
-        emails.join("\n") +
+            emails.join(
+                "\n"
+            ) +
 
-        "\n\n" +
+            "\n\n" +
 
-        "ACHTUNG:\n" +
+            "Die E-Mail enthält personenbezogene " +
+            "und möglicherweise besonders schützenswerte Daten.\n\n" +
 
-        "Die E-Mail enthält personenbezogene " +
-        "und möglicherweise besonders schützenswerte Daten.\n\n" +
+            "Sind die Empfänger korrekt?"
 
-        "Nur fortfahren, wenn die Empfänger korrekt sind."
-
-    );
+        );
 
 
     if(!bestaetigung) {
@@ -1122,28 +1259,37 @@ function senden() {
 
 
     /*
-       Daten vor dem Öffnen des Mailclients löschen.
-
-       Achtung:
-       Sobald mailto geöffnet wird, übernimmt der
-       lokale Mailclient die Daten.
-    */
+     * Verschlüsselte Daten löschen,
+     * bevor der Mailclient geöffnet wird.
+     */
 
     sessionStorage.removeItem(
         "v10_formular"
     );
 
 
+    formularDaten = null;
+
+
+    const empfaengerString =
+        emails.join(
+            ";"
+        );
+
+
     const mailto =
+
         "mailto:" +
         empfaengerString +
 
         "?subject=" +
+
         encodeURIComponent(
             "Info Festnahme"
         ) +
 
         "&body=" +
+
         encodeURIComponent(
             text
         );
@@ -1164,9 +1310,7 @@ function datenLoeschen() {
     const bestaetigung =
         confirm(
 
-            "Sollen die verschlüsselten " +
-            "Sitzungsdaten unwiderruflich " +
-            "aus dieser Browser-Sitzung gelöscht werden?"
+            "Sollen die Formulardaten gelöscht werden?"
 
         );
 
@@ -1187,33 +1331,45 @@ function datenLoeschen() {
 
 
     document
-        .getElementById("empfaengerBox")
-        .classList.add("hidden");
+        .getElementById(
+            "empfaengerBox"
+        )
+        .classList.add(
+            "hidden"
+        );
 
 
     document
-        .getElementById("loginBox")
-        .classList.remove("hidden");
+        .getElementById(
+            "loginBox"
+        )
+        .classList.remove(
+            "hidden"
+        );
 
 
     alert(
-        "Die Sitzungsdaten wurden gelöscht."
+        "Die Formulardaten wurden gelöscht."
     );
 
 }
 
 
 /* =========================================================
-   ENTER-TASTE
+   ENTER
    ========================================================= */
 
 document
-    .getElementById("pin")
+    .getElementById(
+        "pin"
+    )
     .addEventListener(
         "keydown",
         function(event) {
 
-            if(event.key === "Enter") {
+            if(
+                event.key === "Enter"
+            ) {
 
                 datenEntsperren();
 
@@ -1221,7 +1377,6 @@ document
 
         }
     );
-
 
 </script>
 
