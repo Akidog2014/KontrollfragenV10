@@ -37,10 +37,6 @@ body {
     font-weight: bold;
 }
 
-.section {
-    margin-bottom: 25px;
-}
-
 h2 {
     margin-top: 0;
 }
@@ -50,6 +46,10 @@ h3 {
     padding-bottom: 8px;
 }
 
+.section {
+    margin-bottom: 25px;
+}
+
 label {
     font-weight: bold;
     display: block;
@@ -57,8 +57,7 @@ label {
 }
 
 input,
-textarea,
-select {
+textarea {
     padding: 10px;
     width: 100%;
     margin-top: 5px;
@@ -69,6 +68,31 @@ select {
 
 textarea {
     resize: vertical;
+}
+
+button {
+    padding: 12px;
+    font-size: 16px;
+    margin-top: 8px;
+    width: 100%;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.btn {
+    background: #333;
+    color: white;
+}
+
+.btn-green {
+    background: #198754;
+    color: white;
+}
+
+.btn-red {
+    background: #b02a37;
+    color: white;
 }
 
 .hidden {
@@ -94,48 +118,12 @@ textarea {
     font-weight: normal;
 }
 
-button {
-    padding: 12px;
-    font-size: 16px;
-    margin-top: 8px;
-    width: 100%;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-}
-
-.btn {
-    background: #333;
-    color: white;
-}
-
-.btn:hover {
-    background: #222;
-}
-
-.btn-green {
-    background: #198754;
-    color: white;
-}
-
-.btn-red {
-    background: #b02a37;
-    color: white;
-}
-
 .warning {
     background: #fff3cd;
     border: 1px solid #ffe69c;
     padding: 12px;
     border-radius: 5px;
     margin-bottom: 20px;
-}
-
-.status {
-    font-size: 13px;
-    text-align: center;
-    color: #555;
-    margin-top: 10px;
 }
 
 .error {
@@ -153,6 +141,26 @@ button {
     border-radius: 5px;
     margin-bottom: 15px;
 }
+
+.info {
+    background: #cff4fc;
+    color: #055160;
+    padding: 10px;
+    border-radius: 5px;
+    margin-bottom: 15px;
+}
+
+.status {
+    font-size: 13px;
+    text-align: center;
+    color: #666;
+    margin-top: 10px;
+}
+
+.pin-input {
+    text-align: center;
+    letter-spacing: 4px;
+}
 </style>
 </head>
 
@@ -164,33 +172,113 @@ button {
         🔐 KONTROLLFORMULAR – V10
     </div>
 
-    <div id="loginBox">
+    <!-- =====================================================
+         ERSTMALIGE EINRICHTUNG
+         ===================================================== -->
 
-        <h2>Sicherheitsprüfung</h2>
+    <div id="setupBox" class="hidden">
+
+        <h2>V10-Code einrichten</h2>
 
         <div class="warning">
-            Der Zugriff auf dieses Formular ist geschützt.
-            Bitte geben Sie Ihre V10-PIN ein.
+            Dies ist die erstmalige Einrichtung dieses Formulars.
+            Legen Sie einen persönlichen V10-Code fest.
         </div>
 
-        <label for="pin">V10-PIN</label>
+        <div class="info">
+            Der Code wird nicht im Klartext gespeichert.
+            Verwenden Sie einen ausreichend langen Code.
+        </div>
+
+        <label for="neuerCode">
+            Neuer V10-Code:
+        </label>
+
         <input
             type="password"
-            id="pin"
-            inputmode="numeric"
-            autocomplete="off"
-            maxlength="32"
-            placeholder="PIN eingeben"
+            id="neuerCode"
+            class="pin-input"
+            autocomplete="new-password"
+            maxlength="64"
+            placeholder="Code eingeben"
         >
 
-        <button class="btn" onclick="entsperren()">
-            Formular entsperren
+        <label for="neuerCodeBestaetigung">
+            Code wiederholen:
+        </label>
+
+        <input
+            type="password"
+            id="neuerCodeBestaetigung"
+            class="pin-input"
+            autocomplete="new-password"
+            maxlength="64"
+            placeholder="Code wiederholen"
+        >
+
+        <button
+            class="btn-green"
+            onclick="codeEinrichten()"
+        >
+            🔐 V10-Code speichern
         </button>
 
-        <div id="loginError" class="error hidden"></div>
+        <div
+            id="setupError"
+            class="error hidden"
+        ></div>
 
     </div>
 
+
+    <!-- =====================================================
+         LOGIN
+         ===================================================== -->
+
+    <div id="loginBox" class="hidden">
+
+        <h2>V10-Anmeldung</h2>
+
+        <div class="warning">
+            Bitte geben Sie Ihren persönlichen V10-Code ein.
+        </div>
+
+        <label for="loginCode">
+            V10-Code:
+        </label>
+
+        <input
+            type="password"
+            id="loginCode"
+            class="pin-input"
+            autocomplete="current-password"
+            maxlength="64"
+            placeholder="Code eingeben"
+        >
+
+        <button
+            class="btn"
+            onclick="anmelden()"
+        >
+            🔓 Formular entsperren
+        </button>
+
+        <div
+            id="loginError"
+            class="error hidden"
+        ></div>
+
+        <div
+            id="lockoutMessage"
+            class="error hidden"
+        ></div>
+
+    </div>
+
+
+    <!-- =====================================================
+         FORMULAR
+         ===================================================== -->
 
     <div id="formular" class="hidden">
 
@@ -199,7 +287,7 @@ button {
         </div>
 
         <div class="status">
-            Sitzung läuft automatisch nach 10 Minuten Inaktivität ab.
+            Automatische Sperre nach 10 Minuten Inaktivität.
         </div>
 
         <hr>
@@ -208,13 +296,30 @@ button {
 
 
         <!-- PERSON -->
+
         <div class="section">
 
-            <label for="name">Nachname:</label>
-            <input type="text" id="name" autocomplete="off">
+            <label for="name">
+                Nachname:
+            </label>
 
-            <label for="vorname">Vorname:</label>
-            <input type="text" id="vorname" autocomplete="off">
+            <input
+                type="text"
+                id="name"
+                autocomplete="off"
+            >
+
+
+            <label for="vorname">
+                Vorname:
+            </label>
+
+            <input
+                type="text"
+                id="vorname"
+                autocomplete="off"
+            >
+
 
             <label for="geburtsdatum">
                 Geburtsdatum (TT.MM.JJJJ):
@@ -232,17 +337,40 @@ button {
 
 
         <!-- ALKOHOL -->
-        <button class="btn" onclick="alkoholClicked()">
+
+        <button
+            class="btn"
+            onclick="alkoholClicked()"
+        >
             Alkohol
         </button>
 
-        <div id="alkohol-section" class="section hidden">
+        <div
+            id="alkohol-section"
+            class="section hidden"
+        >
 
-            <label for="alkohol-datum">Datum:</label>
-            <input type="text" id="alkohol-datum" readonly>
+            <label for="alkohol-datum">
+                Datum:
+            </label>
 
-            <label for="alkohol-zeit">Zeit:</label>
-            <input type="text" id="alkohol-zeit" readonly>
+            <input
+                type="text"
+                id="alkohol-datum"
+                readonly
+            >
+
+
+            <label for="alkohol-zeit">
+                Zeit:
+            </label>
+
+            <input
+                type="text"
+                id="alkohol-zeit"
+                readonly
+            >
+
 
             <label for="alkoholwert">
                 Alkoholwert:
@@ -260,17 +388,39 @@ button {
 
 
         <!-- DROGEN -->
-        <button class="btn" onclick="drogenClicked()">
+
+        <button
+            class="btn"
+            onclick="drogenClicked()"
+        >
             Drogen
         </button>
 
-        <div id="drogen-section" class="section hidden">
+        <div
+            id="drogen-section"
+            class="section hidden"
+        >
 
-            <label for="drogen-datum">Datum:</label>
-            <input type="text" id="drogen-datum" readonly>
+            <label for="drogen-datum">
+                Datum:
+            </label>
 
-            <label for="drogen-zeit">Zeit:</label>
-            <input type="text" id="drogen-zeit" readonly>
+            <input
+                type="text"
+                id="drogen-datum"
+                readonly
+            >
+
+
+            <label for="drogen-zeit">
+                Zeit:
+            </label>
+
+            <input
+                type="text"
+                id="drogen-zeit"
+                readonly
+            >
 
 
             <label class="checkbox-label">
@@ -282,6 +432,7 @@ button {
                 positiv
             </label>
 
+
             <label class="checkbox-label">
                 <input
                     type="checkbox"
@@ -292,30 +443,48 @@ button {
             </label>
 
 
-            <div id="drogen-checklist" class="hidden">
+            <div
+                id="drogen-checklist"
+                class="hidden"
+            >
 
                 <label class="sub-option">
-                    <input type="checkbox" id="drogen-can">
+                    <input
+                        type="checkbox"
+                        id="drogen-can"
+                    >
                     Cannabis
                 </label>
 
                 <label class="sub-option">
-                    <input type="checkbox" id="drogen-benzo">
+                    <input
+                        type="checkbox"
+                        id="drogen-benzo"
+                    >
                     Benzodiazepine
                 </label>
 
                 <label class="sub-option">
-                    <input type="checkbox" id="drogen-amp">
+                    <input
+                        type="checkbox"
+                        id="drogen-amp"
+                    >
                     Amphetamine
                 </label>
 
                 <label class="sub-option">
-                    <input type="checkbox" id="drogen-kok">
+                    <input
+                        type="checkbox"
+                        id="drogen-kok"
+                    >
                     Kokain
                 </label>
 
                 <label class="sub-option">
-                    <input type="checkbox" id="drogen-opi">
+                    <input
+                        type="checkbox"
+                        id="drogen-opi"
+                    >
                     Opiate
                 </label>
 
@@ -325,12 +494,16 @@ button {
 
 
         <!-- WEITERE FRAGEN -->
+
         <div class="section">
 
             <h3>Weitere Fragen</h3>
 
 
+            <!-- Krankheit -->
+
             <div>
+
                 <label>
                     Leiden Sie gegenwärtig an einer Krankheit?
                 </label>
@@ -341,17 +514,17 @@ button {
                         type="radio"
                         name="krankheit"
                         id="krankheit-ja"
-                        value="ja"
                         onchange="toggleTextfield('krankheit')"
-                    > Ja
+                    >
+                    Ja
 
                     <input
                         type="radio"
                         name="krankheit"
                         id="krankheit-nein"
-                        value="nein"
                         onchange="toggleTextfield('krankheit')"
-                    > Nein
+                    >
+                    Nein
 
                 </div>
 
@@ -365,7 +538,10 @@ button {
             </div>
 
 
+            <!-- Ärztliche Behandlung -->
+
             <div>
+
                 <label>
                     Waren Sie in letzter Zeit in regelmäßiger ärztlicher Behandlung?
                 </label>
@@ -376,17 +552,17 @@ button {
                         type="radio"
                         name="aerztliche"
                         id="aerztliche-ja"
-                        value="ja"
                         onchange="toggleTextfield('aerztliche')"
-                    > Ja
+                    >
+                    Ja
 
                     <input
                         type="radio"
                         name="aerztliche"
                         id="aerztliche-nein"
-                        value="nein"
                         onchange="toggleTextfield('aerztliche')"
-                    > Nein
+                    >
+                    Nein
 
                 </div>
 
@@ -400,7 +576,10 @@ button {
             </div>
 
 
+            <!-- Medikamente -->
+
             <div>
+
                 <label>
                     Benötigen Sie Medikamente?
                 </label>
@@ -411,17 +590,17 @@ button {
                         type="radio"
                         name="medikamente"
                         id="medikamente-ja"
-                        value="ja"
                         onchange="toggleTextfield('medikamente')"
-                    > Ja
+                    >
+                    Ja
 
                     <input
                         type="radio"
                         name="medikamente"
                         id="medikamente-nein"
-                        value="nein"
                         onchange="toggleTextfield('medikamente')"
-                    > Nein
+                    >
+                    Nein
 
                 </div>
 
@@ -435,7 +614,10 @@ button {
             </div>
 
 
+            <!-- Weitere Personen -->
+
             <div>
+
                 <label>
                     Möchten Sie, dass wir weitere Personen über Ihre Festnahme informieren?
                 </label>
@@ -446,17 +628,17 @@ button {
                         type="radio"
                         name="weiterepersonen"
                         id="weiterepersonen-ja"
-                        value="ja"
                         onchange="toggleTextfield('weiterepersonen')"
-                    > Ja
+                    >
+                    Ja
 
                     <input
                         type="radio"
                         name="weiterepersonen"
                         id="weiterepersonen-nein"
-                        value="nein"
                         onchange="toggleTextfield('weiterepersonen')"
-                    > Nein
+                    >
+                    Nein
 
                 </div>
 
@@ -470,7 +652,10 @@ button {
             </div>
 
 
+            <!-- Personen Obhut -->
+
             <div>
+
                 <label>
                     Befinden sich Personen in Ihrer Obhut, welche ohne Ihre Anwesenheit in eine Notlage geraten?
                 </label>
@@ -481,17 +666,17 @@ button {
                         type="radio"
                         name="personen_notlage"
                         id="personen_notlage-ja"
-                        value="ja"
                         onchange="toggleTextfield('personen_notlage')"
-                    > Ja
+                    >
+                    Ja
 
                     <input
                         type="radio"
                         name="personen_notlage"
                         id="personen_notlage-nein"
-                        value="nein"
                         onchange="toggleTextfield('personen_notlage')"
-                    > Nein
+                    >
+                    Nein
 
                 </div>
 
@@ -505,7 +690,10 @@ button {
             </div>
 
 
+            <!-- Tiere -->
+
             <div>
+
                 <label>
                     Befinden sich Tiere in Ihrer Obhut, welche ohne Ihre Anwesenheit in eine Notlage geraten?
                 </label>
@@ -516,17 +704,17 @@ button {
                         type="radio"
                         name="tiere_notlage"
                         id="tiere_notlage-ja"
-                        value="ja"
                         onchange="toggleTextfield('tiere_notlage')"
-                    > Ja
+                    >
+                    Ja
 
                     <input
                         type="radio"
                         name="tiere_notlage"
                         id="tiere_notlage-nein"
-                        value="nein"
                         onchange="toggleTextfield('tiere_notlage')"
-                    > Nein
+                    >
+                    Nein
 
                 </div>
 
@@ -540,7 +728,10 @@ button {
             </div>
 
 
+            <!-- Dringendes -->
+
             <div>
+
                 <label>
                     Müssen Sie etwas Dringendes erledigen?
                 </label>
@@ -551,17 +742,17 @@ button {
                         type="radio"
                         name="dringend"
                         id="dringend-ja"
-                        value="ja"
                         onchange="toggleTextfield('dringend')"
-                    > Ja
+                    >
+                    Ja
 
                     <input
                         type="radio"
                         name="dringend"
                         id="dringend-nein"
-                        value="nein"
                         onchange="toggleTextfield('dringend')"
-                    > Nein
+                    >
+                    Nein
 
                 </div>
 
@@ -589,7 +780,7 @@ button {
             class="btn-red"
             onclick="sitzungLoeschen()"
         >
-            Sitzung sperren und Daten löschen
+            🔒 Sitzung sperren und Daten löschen
         </button>
 
     </div>
@@ -600,187 +791,688 @@ button {
 <script>
 
 /* =========================================================
-   V10 SICHERHEIT
+   V10 KONFIGURATION
    ========================================================= */
 
-const SESSION_TIMEOUT = 10 * 60 * 1000;
+const TIMEOUT =
+    10 * 60 * 1000;
 
-let letzteAktivitaet = Date.now();
+const CODE_SALT_LENGTH =
+    16;
+
+const PBKDF2_ITERATIONS =
+    250000;
+
+
+/* =========================================================
+   SESSION
+   ========================================================= */
+
+let aktuellerCode = null;
+
+let letzteAktivitaet =
+    Date.now();
+
 let sessionTimer = null;
 
+let fehlversuche = 0;
 
-/* ---------------------------------------------------------
-   Hilfsfunktionen
---------------------------------------------------------- */
+let gesperrtBis = 0;
 
-function zufallsBytes(anzahl) {
 
-    const array = new Uint8Array(anzahl);
+/* =========================================================
+   INITIALISIERUNG
+   ========================================================= */
 
-    crypto.getRandomValues(array);
+document.addEventListener(
+    "DOMContentLoaded",
+    initialisieren
+);
 
-    return array;
+
+function initialisieren() {
+
+    if(
+        !window.crypto ||
+        !window.crypto.subtle
+    ) {
+
+        alert(
+            "Dieser Browser unterstützt die benötigte Verschlüsselung nicht."
+        );
+
+        return;
+
+    }
+
+
+    if(
+        localStorage.getItem(
+            "v10_code_verifier"
+        )
+    ) {
+
+        zeigeLogin();
+
+    }
+    else {
+
+        zeigeEinrichtung();
+
+    }
+
+
+    document
+        .getElementById("loginCode")
+        ?.addEventListener(
+            "keydown",
+            event => {
+
+                if(event.key === "Enter") {
+
+                    anmelden();
+
+                }
+
+            }
+        );
+
+
+    document
+        .getElementById("neuerCodeBestaetigung")
+        ?.addEventListener(
+            "keydown",
+            event => {
+
+                if(event.key === "Enter") {
+
+                    codeEinrichten();
+
+                }
+
+            }
+        );
+
 }
 
+
+/* =========================================================
+   ANZEIGEN
+   ========================================================= */
+
+function zeigeEinrichtung() {
+
+    document
+        .getElementById("setupBox")
+        .classList.remove("hidden");
+
+    document
+        .getElementById("loginBox")
+        .classList.add("hidden");
+
+}
+
+
+function zeigeLogin() {
+
+    document
+        .getElementById("setupBox")
+        .classList.add("hidden");
+
+    document
+        .getElementById("loginBox")
+        .classList.remove("hidden");
+
+}
+
+
+/* =========================================================
+   RANDOM BYTES
+   ========================================================= */
+
+function randomBytes(length) {
+
+    const bytes =
+        new Uint8Array(length);
+
+    crypto.getRandomValues(bytes);
+
+    return bytes;
+
+}
+
+
+/* =========================================================
+   BASE64
+   ========================================================= */
 
 function bytesToBase64(bytes) {
 
     let binary = "";
 
-    bytes.forEach(byte => {
-        binary += String.fromCharCode(byte);
-    });
+    for(
+        let i = 0;
+        i < bytes.length;
+        i++
+    ) {
+
+        binary +=
+            String.fromCharCode(
+                bytes[i]
+            );
+
+    }
 
     return btoa(binary);
+
 }
 
 
 function base64ToBytes(base64) {
 
-    const binary = atob(base64);
+    const binary =
+        atob(base64);
 
-    const bytes = new Uint8Array(binary.length);
+    const bytes =
+        new Uint8Array(
+            binary.length
+        );
 
-    for(let i = 0; i < binary.length; i++) {
-        bytes[i] = binary.charCodeAt(i);
+    for(
+        let i = 0;
+        i < binary.length;
+        i++
+    ) {
+
+        bytes[i] =
+            binary.charCodeAt(i);
+
     }
 
     return bytes;
-}
 
-
-/* ---------------------------------------------------------
-   PIN -> AES Schlüssel
---------------------------------------------------------- */
-
-async function schluesselAusPIN(pin, salt) {
-
-    const encoder = new TextEncoder();
-
-    const material = await crypto.subtle.importKey(
-        "raw",
-        encoder.encode(pin),
-        "PBKDF2",
-        false,
-        ["deriveKey"]
-    );
-
-    return crypto.subtle.deriveKey(
-        {
-            name: "PBKDF2",
-            salt: salt,
-            iterations: 250000,
-            hash: "SHA-256"
-        },
-        material,
-        {
-            name: "AES-GCM",
-            length: 256
-        },
-        false,
-        ["encrypt", "decrypt"]
-    );
-}
-
-
-/* ---------------------------------------------------------
-   Daten verschlüsseln
---------------------------------------------------------- */
-
-async function verschluesseln(daten, pin) {
-
-    const encoder = new TextEncoder();
-
-    const salt = zufallsBytes(16);
-    const iv = zufallsBytes(12);
-
-    const key = await schluesselAusPIN(pin, salt);
-
-    const verschluesselteDaten = await crypto.subtle.encrypt(
-        {
-            name: "AES-GCM",
-            iv: iv
-        },
-        key,
-        encoder.encode(JSON.stringify(daten))
-    );
-
-    return {
-
-        salt: bytesToBase64(salt),
-
-        iv: bytesToBase64(iv),
-
-        data: bytesToBase64(
-            new Uint8Array(verschluesselteDaten)
-        )
-
-    };
 }
 
 
 /* =========================================================
-   PIN
+   CODE HASH / VERIFIER
    ========================================================= */
 
-async function entsperren() {
+async function codeHash(code, salt) {
 
-    const pin = document.getElementById("pin").value.trim();
-
-    const error = document.getElementById("loginError");
-
-    error.classList.add("hidden");
-
-    /*
-       WICHTIG:
-
-       Hier kannst du deine eigene V10-PIN festlegen.
-
-       Beispiel:
-       482917
-
-       Diese PIN ist nur ein Client-Schutz.
-       Für echten Zugriffsschutz muss die Authentifizierung
-       serverseitig erfolgen.
-    */
-
-    const V10_PIN = "482917";
+    const encoder =
+        new TextEncoder();
 
 
-    if(pin.length < 6) {
+    const material =
+        await crypto.subtle.importKey(
 
-        error.textContent =
-            "Die PIN muss mindestens 6 Zeichen lang sein.";
+            "raw",
 
-        error.classList.remove("hidden");
+            encoder.encode(code),
 
-        return;
+            "PBKDF2",
+
+            false,
+
+            ["deriveBits"]
+
+        );
+
+
+    const bits =
+        await crypto.subtle.deriveBits(
+
+            {
+                name: "PBKDF2",
+
+                salt: salt,
+
+                iterations:
+                    PBKDF2_ITERATIONS,
+
+                hash: "SHA-256"
+
+            },
+
+            material,
+
+            256
+
+        );
+
+
+    return new Uint8Array(bits);
+
+}
+
+
+/* =========================================================
+   SICHERER VERGLEICH
+   ========================================================= */
+
+function sichereVergleich(a, b) {
+
+    if(a.length !== b.length) {
+
+        return false;
+
     }
 
 
-    if(pin !== V10_PIN) {
+    let result = 0;
 
-        error.textContent =
-            "Ungültige V10-PIN.";
 
-        error.classList.remove("hidden");
+    for(
+        let i = 0;
+        i < a.length;
+        i++
+    ) {
 
-        document.getElementById("pin").value = "";
+        result |=
+            a[i] ^ b[i];
 
-        return;
     }
 
 
-    document.getElementById("loginBox")
-        .classList.add("hidden");
+    return result === 0;
 
-    document.getElementById("formular")
-        .classList.remove("hidden");
+}
+
+
+/* =========================================================
+   V10 CODE EINRICHTEN
+   ========================================================= */
+
+async function codeEinrichten() {
+
+    const error =
+        document.getElementById(
+            "setupError"
+        );
+
+
+    error.classList.add(
+        "hidden"
+    );
+
+
+    const code =
+        document
+            .getElementById(
+                "neuerCode"
+            )
+            .value;
+
+
+    const bestaetigung =
+        document
+            .getElementById(
+                "neuerCodeBestaetigung"
+            )
+            .value;
+
+
+    if(code.length < 8) {
+
+        error.textContent =
+            "Der V10-Code muss mindestens 8 Zeichen lang sein.";
+
+        error.classList.remove(
+            "hidden"
+        );
+
+        return;
+
+    }
+
+
+    if(code !== bestaetigung) {
+
+        error.textContent =
+            "Die beiden Codes stimmen nicht überein.";
+
+        error.classList.remove(
+            "hidden"
+        );
+
+        return;
+
+    }
+
+
+    try {
+
+        const salt =
+            randomBytes(
+                CODE_SALT_LENGTH
+            );
+
+
+        const verifier =
+            await codeHash(
+                code,
+                salt
+            );
+
+
+        /*
+         * Es wird NICHT der eigentliche
+         * Code gespeichert.
+         */
+
+        const speicherObjekt = {
+
+            salt:
+                bytesToBase64(
+                    salt
+                ),
+
+            verifier:
+                bytesToBase64(
+                    verifier
+                )
+
+        };
+
+
+        localStorage.setItem(
+
+            "v10_code_verifier",
+
+            JSON.stringify(
+                speicherObjekt
+            )
+
+        );
+
+
+        /*
+         * Code aus den Eingabefeldern entfernen
+         */
+
+        document
+            .getElementById(
+                "neuerCode"
+            )
+            .value = "";
+
+        document
+            .getElementById(
+                "neuerCodeBestaetigung"
+            )
+            .value = "";
+
+
+        /*
+         * Code nur im Speicher behalten,
+         * damit die Formulardaten später
+         * verschlüsselt werden können.
+         */
+
+        aktuellerCode = code;
+
+
+        zeigeFormular();
+
+    }
+    catch(errorObject) {
+
+        console.error(
+            errorObject
+        );
+
+        error.textContent =
+            "Der V10-Code konnte nicht eingerichtet werden.";
+
+        error.classList.remove(
+            "hidden"
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   ANMELDEN
+   ========================================================= */
+
+async function anmelden() {
+
+    const jetzt =
+        Date.now();
+
+
+    if(jetzt < gesperrtBis) {
+
+        const sekunden =
+            Math.ceil(
+                (gesperrtBis - jetzt) / 1000
+            );
+
+
+        const message =
+            document.getElementById(
+                "lockoutMessage"
+            );
+
+
+        message.textContent =
+            "Anmeldung vorübergehend gesperrt. " +
+            "Bitte noch " +
+            sekunden +
+            " Sekunden warten.";
+
+
+        message.classList.remove(
+            "hidden"
+        );
+
+
+        return;
+
+    }
+
+
+    const code =
+        document
+            .getElementById(
+                "loginCode"
+            )
+            .value;
+
+
+    const error =
+        document.getElementById(
+            "loginError"
+        );
+
+
+    error.classList.add(
+        "hidden"
+    );
+
+
+    if(!code) {
+
+        error.textContent =
+            "Bitte V10-Code eingeben.";
+
+        error.classList.remove(
+            "hidden"
+        );
+
+        return;
+
+    }
+
+
+    try {
+
+        const gespeichert =
+            localStorage.getItem(
+                "v10_code_verifier"
+            );
+
+
+        if(!gespeichert) {
+
+            zeigeEinrichtung();
+
+            return;
+
+        }
+
+
+        const daten =
+            JSON.parse(
+                gespeichert
+            );
+
+
+        const salt =
+            base64ToBytes(
+                daten.salt
+            );
+
+
+        const gespeicherterVerifier =
+            base64ToBytes(
+                daten.verifier
+            );
+
+
+        const eingegebenerVerifier =
+            await codeHash(
+                code,
+                salt
+            );
+
+
+        if(
+            !sichereVergleich(
+                eingegebenerVerifier,
+                gespeicherterVerifier
+            )
+        ) {
+
+            fehlversuche++;
+
+
+            document
+                .getElementById(
+                    "loginCode"
+                )
+                .value = "";
+
+
+            if(fehlversuche >= 5) {
+
+                gesperrtBis =
+                    Date.now() +
+                    60 * 1000;
+
+                fehlversuche = 0;
+
+
+                error.textContent =
+                    "Zu viele falsche Eingaben. " +
+                    "Die Anmeldung wurde für 60 Sekunden gesperrt.";
+
+            }
+            else {
+
+                error.textContent =
+                    "Falscher V10-Code. " +
+                    "Verbleibende Versuche: " +
+                    (5 - fehlversuche);
+
+            }
+
+
+            error.classList.remove(
+                "hidden"
+            );
+
+            return;
+
+        }
+
+
+        /*
+         * Erfolgreiche Anmeldung
+         */
+
+        fehlversuche = 0;
+
+        aktuellerCode = code;
+
+
+        document
+            .getElementById(
+                "loginCode"
+            )
+            .value = "";
+
+
+        zeigeFormular();
+
+
+    }
+    catch(errorObject) {
+
+        console.error(
+            errorObject
+        );
+
+        error.textContent =
+            "Fehler bei der V10-Anmeldung.";
+
+        error.classList.remove(
+            "hidden"
+        );
+
+    }
+
+}
+
+
+/* =========================================================
+   FORMULAR ANZEIGEN
+   ========================================================= */
+
+function zeigeFormular() {
+
+    document
+        .getElementById(
+            "setupBox"
+        )
+        .classList.add(
+            "hidden"
+        );
+
+
+    document
+        .getElementById(
+            "loginBox"
+        )
+        .classList.add(
+            "hidden"
+        );
+
+
+    document
+        .getElementById(
+            "formular"
+        )
+        .classList.remove(
+            "hidden"
+        );
 
 
     starteSitzung();
 
-    document.getElementById("pin").value = "";
 }
 
 
@@ -788,95 +1480,119 @@ async function entsperren() {
    SESSION TIMEOUT
    ========================================================= */
 
+function starteSitzung() {
+
+    letzteAktivitaet =
+        Date.now();
+
+
+    clearInterval(
+        sessionTimer
+    );
+
+
+    sessionTimer =
+        setInterval(
+
+            () => {
+
+                if(
+                    Date.now() -
+                    letzteAktivitaet
+                    >= TIMEOUT
+                ) {
+
+                    sitzungLoeschen();
+
+                }
+
+            },
+
+            10000
+
+        );
+
+}
+
+
 function aktivitaet() {
 
-    letzteAktivitaet = Date.now();
+    if(
+        document
+            .getElementById(
+                "formular"
+            )
+            .classList
+            .contains(
+                "hidden"
+            )
+    ) {
 
-    if(!sessionTimer) {
-
-        starteSitzung();
+        return;
 
     }
 
-}
 
-
-function starteSitzung() {
-
-    letzteAktivitaet = Date.now();
-
-    clearInterval(sessionTimer);
-
-    sessionTimer = setInterval(() => {
-
-        if(
-            Date.now() - letzteAktivitaet
-            >= SESSION_TIMEOUT
-        ) {
-
-            sitzungLoeschen();
-
-        }
-
-    }, 10000);
+    letzteAktivitaet =
+        Date.now();
 
 }
 
-
-function sitzungLoeschen() {
-
-    sessionStorage.removeItem("v10_formular");
-
-    clearInterval(sessionTimer);
-
-    sessionTimer = null;
-
-    document.getElementById("formular")
-        .classList.add("hidden");
-
-    document.getElementById("loginBox")
-        .classList.remove("hidden");
-
-    document.getElementById("pin").value = "";
-
-    document.querySelectorAll(
-        "input, textarea"
-    ).forEach(element => {
-
-        if(
-            element.type === "radio" ||
-            element.type === "checkbox"
-        ) {
-
-            element.checked = false;
-
-        } else {
-
-            element.value = "";
-
-        }
-
-    });
-
-}
-
-
-/* Aktivität überwachen */
 
 [
     "click",
     "keydown",
     "touchstart",
     "mousemove"
-].forEach(eventName => {
+].forEach(
 
-    document.addEventListener(
-        eventName,
-        aktivitaet,
-        { passive: true }
+    eventName => {
+
+        document.addEventListener(
+            eventName,
+            aktivitaet,
+            { passive: true }
+        );
+
+    }
+
+);
+
+
+/* =========================================================
+   SITZUNG LÖSCHEN
+   ========================================================= */
+
+function sitzungLoeschen() {
+
+    sessionStorage.removeItem(
+        "v10_formular"
     );
 
-});
+
+    aktuellerCode = null;
+
+
+    clearInterval(
+        sessionTimer
+    );
+
+
+    sessionTimer = null;
+
+
+    document
+        .getElementById(
+            "formular"
+        )
+        .classList.add(
+            "hidden"
+        );
+
+
+    zeigeLogin();
+
+}
 
 
 /* =========================================================
@@ -885,25 +1601,32 @@ function sitzungLoeschen() {
 
 function formatGeburtsdatum(input) {
 
-    let v = input.value.replace(/\D/g, "");
+    let v =
+        input.value.replace(
+            /\D/g,
+            ""
+        );
+
 
     if(v.length >= 2) {
 
         v =
-            v.slice(0,2) +
+            v.slice(0, 2) +
             "." +
             v.slice(2);
 
     }
 
+
     if(v.length >= 5) {
 
         v =
-            v.slice(0,5) +
+            v.slice(0, 5) +
             "." +
-            v.slice(5,9);
+            v.slice(5, 9);
 
     }
+
 
     input.value = v;
 
@@ -911,12 +1634,16 @@ function formatGeburtsdatum(input) {
 
 
 document
-    .getElementById("geburtsdatum")
+    .getElementById(
+        "geburtsdatum"
+    )
     .addEventListener(
         "input",
         function() {
 
-            formatGeburtsdatum(this);
+            formatGeburtsdatum(
+                this
+            );
 
         }
     );
@@ -929,26 +1656,40 @@ document
 function alkoholClicked() {
 
     document
-        .getElementById("alkohol-section")
-        .classList.remove("hidden");
-
-    const jetzt = new Date();
-
-    document.getElementById(
-        "alkohol-datum"
-    ).value =
-        jetzt.toLocaleDateString("de-CH");
-
-    document.getElementById(
-        "alkohol-zeit"
-    ).value =
-        jetzt.toLocaleTimeString(
-            "de-CH",
-            {
-                hour: "2-digit",
-                minute: "2-digit"
-            }
+        .getElementById(
+            "alkohol-section"
+        )
+        .classList.remove(
+            "hidden"
         );
+
+
+    const jetzt =
+        new Date();
+
+
+    document
+        .getElementById(
+            "alkohol-datum"
+        )
+        .value =
+            jetzt.toLocaleDateString(
+                "de-CH"
+            );
+
+
+    document
+        .getElementById(
+            "alkohol-zeit"
+        )
+        .value =
+            jetzt.toLocaleTimeString(
+                "de-CH",
+                {
+                    hour: "2-digit",
+                    minute: "2-digit"
+                }
+            );
 
 }
 
@@ -960,26 +1701,40 @@ function alkoholClicked() {
 function drogenClicked() {
 
     document
-        .getElementById("drogen-section")
-        .classList.remove("hidden");
-
-    const jetzt = new Date();
-
-    document.getElementById(
-        "drogen-datum"
-    ).value =
-        jetzt.toLocaleDateString("de-CH");
-
-    document.getElementById(
-        "drogen-zeit"
-    ).value =
-        jetzt.toLocaleTimeString(
-            "de-CH",
-            {
-                hour: "2-digit",
-                minute: "2-digit"
-            }
+        .getElementById(
+            "drogen-section"
+        )
+        .classList.remove(
+            "hidden"
         );
+
+
+    const jetzt =
+        new Date();
+
+
+    document
+        .getElementById(
+            "drogen-datum"
+        )
+        .value =
+            jetzt.toLocaleDateString(
+                "de-CH"
+            );
+
+
+    document
+        .getElementById(
+            "drogen-zeit"
+        )
+        .value =
+            jetzt.toLocaleTimeString(
+                "de-CH",
+                {
+                    hour: "2-digit",
+                    minute: "2-digit"
+                }
+            );
 
 }
 
@@ -991,10 +1746,12 @@ function drogenPositivChanged() {
             "drogen-pos"
         ).checked;
 
+
     const negativ =
         document.getElementById(
             "drogen-neg"
         );
+
 
     if(positiv) {
 
@@ -1002,8 +1759,11 @@ function drogenPositivChanged() {
 
     }
 
+
     document
-        .getElementById("drogen-checklist")
+        .getElementById(
+            "drogen-checklist"
+        )
         .classList.toggle(
             "hidden",
             !positiv
@@ -1019,18 +1779,24 @@ function drogenNegativChanged() {
             "drogen-neg"
         ).checked;
 
+
     const positiv =
         document.getElementById(
             "drogen-pos"
         );
+
 
     if(negativ) {
 
         positiv.checked = false;
 
         document
-            .getElementById("drogen-checklist")
-            .classList.add("hidden");
+            .getElementById(
+                "drogen-checklist"
+            )
+            .classList.add(
+                "hidden"
+            );
 
     }
 
@@ -1048,10 +1814,12 @@ function toggleTextfield(qid) {
             qid + "-ja"
         );
 
+
     const textarea =
         document.getElementById(
             qid + "-textarea"
         );
+
 
     textarea.classList.toggle(
         "hidden",
@@ -1062,7 +1830,7 @@ function toggleTextfield(qid) {
 
 
 /* =========================================================
-   DATEN SAMMELN
+   FORMULARDATEN SAMMELN
    ========================================================= */
 
 function formularDatenSammeln() {
@@ -1077,13 +1845,24 @@ function formularDatenSammeln() {
         person: {
 
             nachname:
-                document.getElementById("name").value.trim(),
+                document
+                    .getElementById("name")
+                    .value
+                    .trim(),
 
             vorname:
-                document.getElementById("vorname").value.trim(),
+                document
+                    .getElementById("vorname")
+                    .value
+                    .trim(),
 
             geburtsdatum:
-                document.getElementById("geburtsdatum").value.trim()
+                document
+                    .getElementById(
+                        "geburtsdatum"
+                    )
+                    .value
+                    .trim()
 
         },
 
@@ -1100,7 +1879,9 @@ function formularDatenSammeln() {
 
     if(
         !document
-            .getElementById("alkohol-section")
+            .getElementById(
+                "alkohol-section"
+            )
             .classList
             .contains("hidden")
     ) {
@@ -1108,19 +1889,25 @@ function formularDatenSammeln() {
         daten.alkohol = {
 
             datum:
-                document.getElementById(
-                    "alkohol-datum"
-                ).value,
+                document
+                    .getElementById(
+                        "alkohol-datum"
+                    )
+                    .value,
 
             zeit:
-                document.getElementById(
-                    "alkohol-zeit"
-                ).value,
+                document
+                    .getElementById(
+                        "alkohol-zeit"
+                    )
+                    .value,
 
             wert:
-                document.getElementById(
-                    "alkoholwert"
-                ).value
+                document
+                    .getElementById(
+                        "alkoholwert"
+                    )
+                    .value
 
         };
 
@@ -1131,7 +1918,9 @@ function formularDatenSammeln() {
 
     if(
         !document
-            .getElementById("drogen-section")
+            .getElementById(
+                "drogen-section"
+            )
             .classList
             .contains("hidden")
     ) {
@@ -1139,26 +1928,34 @@ function formularDatenSammeln() {
         daten.drogen = {
 
             datum:
-                document.getElementById(
-                    "drogen-datum"
-                ).value,
+                document
+                    .getElementById(
+                        "drogen-datum"
+                    )
+                    .value,
 
             zeit:
-                document.getElementById(
-                    "drogen-zeit"
-                ).value,
+                document
+                    .getElementById(
+                        "drogen-zeit"
+                    )
+                    .value,
 
             resultat:
-                document.getElementById(
-                    "drogen-pos"
-                ).checked
-                ? "positiv"
-                :
-                document.getElementById(
-                    "drogen-neg"
-                ).checked
-                ? "negativ"
-                : "Keine Angabe",
+                document
+                    .getElementById(
+                        "drogen-pos"
+                    )
+                    .checked
+                    ? "positiv"
+                    :
+                document
+                    .getElementById(
+                        "drogen-neg"
+                    )
+                    .checked
+                    ? "negativ"
+                    : "Keine Angabe",
 
             substanzen: []
 
@@ -1168,33 +1965,36 @@ function formularDatenSammeln() {
         const drogen = [
 
             ["drogen-can", "Cannabis"],
-
             ["drogen-benzo", "Benzodiazepine"],
-
             ["drogen-amp", "Amphetamine"],
-
             ["drogen-kok", "Kokain"],
-
             ["drogen-opi", "Opiate"]
 
         ];
 
 
-        drogen.forEach(item => {
+        drogen.forEach(
+            item => {
 
-            if(
-                document.getElementById(
-                    item[0]
-                ).checked
-            ) {
+                if(
+                    document
+                        .getElementById(
+                            item[0]
+                        )
+                        .checked
+                ) {
 
-                daten.drogen.substanzen.push(
-                    item[1]
-                );
+                    daten
+                        .drogen
+                        .substanzen
+                        .push(
+                            item[1]
+                        );
+
+                }
 
             }
-
-        });
+        );
 
     }
 
@@ -1241,43 +2041,57 @@ function formularDatenSammeln() {
     ];
 
 
-    fragen.forEach(f => {
+    fragen.forEach(
+        frage => {
 
-        const ja =
-            document.getElementById(
-                f[0] + "-ja"
-            ).checked;
-
-        const nein =
-            document.getElementById(
-                f[0] + "-nein"
-            ).checked;
-
-        const textarea =
-            document.getElementById(
-                f[0] + "-textarea"
-            );
+            const id =
+                frage[0];
 
 
-        daten.fragen[f[0]] = {
+            const ja =
+                document
+                    .getElementById(
+                        id + "-ja"
+                    )
+                    .checked;
 
-            frage: f[1],
 
-            antwort:
-                ja
-                ? "Ja"
-                : nein
-                ? "Nein"
-                : "Keine Angabe",
+            const nein =
+                document
+                    .getElementById(
+                        id + "-nein"
+                    )
+                    .checked;
 
-            details:
-                ja && textarea
-                ? textarea.value.trim()
-                : ""
 
-        };
+            const textarea =
+                document
+                    .getElementById(
+                        id + "-textarea"
+                    );
 
-    });
+
+            daten.fragen[id] = {
+
+                frage:
+                    frage[1],
+
+                antwort:
+                    ja
+                    ? "Ja"
+                    : nein
+                    ? "Nein"
+                    : "Keine Angabe",
+
+                details:
+                    ja
+                    ? textarea.value.trim()
+                    : ""
+
+            };
+
+        }
+    );
 
 
     return daten;
@@ -1291,30 +2105,12 @@ function formularDatenSammeln() {
 
 function validiereDaten(daten) {
 
-    if(!daten.person.nachname) {
-
-        alert("Bitte Nachname eingeben.");
-
-        return false;
-
-    }
-
-
-    if(!daten.person.vorname) {
-
-        alert("Bitte Vorname eingeben.");
-
-        return false;
-
-    }
-
-
-    if(!/^\d{2}\.\d{2}\.\d{4}$/.test(
-        daten.person.geburtsdatum
-    )) {
+    if(
+        !daten.person.nachname
+    ) {
 
         alert(
-            "Bitte ein gültiges Geburtsdatum im Format TT.MM.JJJJ eingeben."
+            "Bitte Nachname eingeben."
         );
 
         return false;
@@ -1323,13 +2119,26 @@ function validiereDaten(daten) {
 
 
     if(
-        daten.alkohol &&
-        daten.alkohol.wert !== "" &&
-        Number(daten.alkohol.wert) < 0
+        !daten.person.vorname
     ) {
 
         alert(
-            "Der Alkoholwert darf nicht negativ sein."
+            "Bitte Vorname eingeben."
+        );
+
+        return false;
+
+    }
+
+
+    if(
+        !/^\d{2}\.\d{2}\.\d{4}$/.test(
+            daten.person.geburtsdatum
+        )
+    ) {
+
+        alert(
+            "Bitte Geburtsdatum im Format TT.MM.JJJJ eingeben."
         );
 
         return false;
@@ -1343,27 +2152,172 @@ function validiereDaten(daten) {
 
 
 /* =========================================================
-   WEITER
+   AES-256-GCM
+   ========================================================= */
+
+async function schluesselAusCode(
+    code,
+    salt
+) {
+
+    const encoder =
+        new TextEncoder();
+
+
+    const material =
+        await crypto.subtle.importKey(
+
+            "raw",
+
+            encoder.encode(code),
+
+            "PBKDF2",
+
+            false,
+
+            ["deriveKey"]
+
+        );
+
+
+    return crypto.subtle.deriveKey(
+
+        {
+
+            name: "PBKDF2",
+
+            salt: salt,
+
+            iterations:
+                PBKDF2_ITERATIONS,
+
+            hash: "SHA-256"
+
+        },
+
+        material,
+
+        {
+
+            name: "AES-GCM",
+
+            length: 256
+
+        },
+
+        false,
+
+        ["encrypt"]
+
+    );
+
+}
+
+
+async function verschluesseln(
+    daten,
+    code
+) {
+
+    const encoder =
+        new TextEncoder();
+
+
+    const salt =
+        randomBytes(16);
+
+
+    const iv =
+        randomBytes(12);
+
+
+    const key =
+        await schluesselAusCode(
+            code,
+            salt
+        );
+
+
+    const encrypted =
+        await crypto.subtle.encrypt(
+
+            {
+                name: "AES-GCM",
+                iv: iv
+            },
+
+            key,
+
+            encoder.encode(
+                JSON.stringify(
+                    daten
+                )
+            )
+
+        );
+
+
+    return {
+
+        salt:
+            bytesToBase64(
+                salt
+            ),
+
+        iv:
+            bytesToBase64(
+                iv
+            ),
+
+        data:
+            bytesToBase64(
+                new Uint8Array(
+                    encrypted
+                )
+            )
+
+    };
+
+}
+
+
+/* =========================================================
+   E-MAIL WEITER
    ========================================================= */
 
 async function sendeEmail() {
 
-    const daten =
-        formularDatenSammeln();
+    if(!aktuellerCode) {
 
-
-    if(!validiereDaten(daten)) {
+        alert(
+            "Keine gültige V10-Sitzung vorhanden."
+        );
 
         return;
 
     }
 
 
-    const bestaetigung = confirm(
-        "Die erfassten Daten werden jetzt verschlüsselt " +
-        "und an die Empfängerauswahl übergeben.\n\n" +
-        "Möchten Sie fortfahren?"
-    );
+    const daten =
+        formularDatenSammeln();
+
+
+    if(
+        !validiereDaten(daten)
+    ) {
+
+        return;
+
+    }
+
+
+    const bestaetigung =
+        confirm(
+
+            "Die Daten werden jetzt verschlüsselt.\n\n" +
+            "Möchten Sie fortfahren?"
+
+        );
 
 
     if(!bestaetigung) {
@@ -1375,49 +2329,50 @@ async function sendeEmail() {
 
     try {
 
-        const pin = prompt(
-            "Bitte V10-PIN erneut eingeben, " +
-            "um die Daten für die nächste Seite zu verschlüsseln:"
-        );
-
-
-        if(!pin) {
-
-            return;
-
-        }
-
-
         const verschluesselteDaten =
             await verschluesseln(
                 daten,
-                pin
+                aktuellerCode
             );
 
 
         /*
-           Nur verschlüsselte Daten werden gespeichert.
-           Keine sensiblen Daten in der URL.
-        */
+         * Es wird nur der verschlüsselte
+         * Datensatz in sessionStorage
+         * abgelegt.
+         */
 
         sessionStorage.setItem(
+
             "v10_formular",
+
             JSON.stringify(
                 verschluesselteDaten
             )
+
         );
+
+
+        /*
+         * Der eigentliche Code bleibt
+         * nicht auf email.html erhalten.
+         */
+
+        aktuellerCode = null;
 
 
         window.location.href =
             "email.html";
 
     }
-    catch(error) {
+    catch(errorObject) {
 
-        console.error(error);
+        console.error(
+            errorObject
+        );
 
         alert(
-            "Die Daten konnten nicht sicher verschlüsselt werden."
+            "Die Daten konnten nicht verschlüsselt werden."
         );
 
     }
@@ -1426,24 +2381,8 @@ async function sendeEmail() {
 
 
 /* =========================================================
-   ENTER-TASTE
+   INITIALISIERUNG DER RADIO-TEXTFELDER
    ========================================================= */
-
-document
-    .getElementById("pin")
-    .addEventListener(
-        "keydown",
-        function(event) {
-
-            if(event.key === "Enter") {
-
-                entsperren();
-
-            }
-
-        }
-    );
-
 
 </script>
 
